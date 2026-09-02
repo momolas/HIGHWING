@@ -1,0 +1,77 @@
+// Copyright (C) 2019 Parrot Drones SAS
+//
+//    Redistribution and use in source and binary forms, with or without
+//    modification, are permitted provided that the following conditions
+//    are met:
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in
+//      the documentation and/or other materials provided with the
+//      distribution.
+//    * Neither the name of the Parrot Company nor the names
+//      of its contributors may be used to endorse or promote products
+//      derived from this software without specific prior written
+//      permission.
+//
+//    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+//    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+//    FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+//    PARROT COMPANY BE LIABLE FOR ANY DIRECT, INDIRECT,
+//    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+//    BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+//    OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+//    AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+//    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+//    OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+//    SUCH DAMAGE.
+
+import Foundation
+
+/// A timeout linked to a setting.
+public class SettingTimeout {
+
+    /// Default timeout.
+    public static let defaultTimeout: DispatchTimeInterval = .seconds(5)
+
+    /// Tells whether a timeout is scheduled.
+    var isScheduled: Bool {
+        return dispatchWorkItem != nil
+    }
+
+    /// Block that should be executed in case of a timeout.
+    ///
+    /// Visibility is internal for testing purposes
+    private(set) var dispatchWorkItem: DispatchWorkItem?
+
+    /// Schedules a timeout.
+    ///
+    /// - Parameters:
+    ///   - timeout: the timeout to use
+    ///   - queue: the queue to use for the `timeoutBlock`
+    ///   - timeoutBlock: the block to call when reaching the timeout
+    func schedule(timeout: DispatchTimeInterval = SettingTimeout.defaultTimeout,
+                  queue: DispatchQueue = .main,
+                  timeoutBlock: @escaping () -> Void) {
+        // be sure to cancel any pending scheduled timeout
+        cancel()
+
+        dispatchWorkItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.dispatchWorkItem = nil
+            timeoutBlock()
+        }
+        queue.asyncAfter(deadline: .now() + timeout,
+                         execute: dispatchWorkItem!)
+    }
+
+    /// Cancels the scheduled timeout.
+    @discardableResult
+    func cancel() -> Bool {
+        let cancelled = dispatchWorkItem != nil
+        dispatchWorkItem?.cancel()
+        dispatchWorkItem = nil
+        return cancelled
+    }
+}
