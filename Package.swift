@@ -1,10 +1,10 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 5.9
 import PackageDescription
 
 let package = Package(
     name: "ParrotSDK",
     platforms: [
-        .iOS(.v26)
+        .iOS(.v15)
     ],
     products: [
         .library(name: "GroundSdk", targets: ["GroundSdk"]),
@@ -25,21 +25,21 @@ let package = Package(
             path: "Frameworks/OpenFlightCore.xcframework"
         ),
         .target(
+            name: "GroundSdk",
+            dependencies: [
+                "SdkCore",
+                .product(name: "SwiftProtobuf", package: "swift-protobuf")
+            ],
+            path: "Sources/GroundSdk"
+        ),
+        .target(
             name: "ArsdkEngine",
             dependencies: [
+                "GroundSdk",
                 "SdkCore",
                 .product(name: "SwiftProtobuf", package: "swift-protobuf")
             ],
             path: "Sources/ArsdkEngine"
-        ),
-        .target(
-            name: "GroundSdk",
-            dependencies: [
-                "SdkCore",
-                "ArsdkEngine",
-                .product(name: "SwiftProtobuf", package: "swift-protobuf")
-            ],
-            path: "Sources/GroundSdk"
         )
     ]
 )

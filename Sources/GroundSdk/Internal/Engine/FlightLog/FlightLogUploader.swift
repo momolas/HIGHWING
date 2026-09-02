@@ -124,8 +124,8 @@ class FlightLogUploader {
                 if let data = data,
                 let stringJson = String(data: data, encoding: String.Encoding.utf8),
                 let arrayJson = self.convertToDictionary(string: stringJson),
-                let baseString = arrayJson["upload_url"],
-                let baseUrl = URL(string: baseString as! String) {
+                let baseString = arrayJson["upload_url"] as? String,
+                let baseUrl = URL(string: baseString) {
                     _ = self.sendFileToServer(baseUrl: baseUrl,
                         api: "", flightLogUrl: flightLogUrl, method: .put,
                         anonymous: true,

@@ -163,13 +163,12 @@ public class MediaGalleryAdder: NSObject {
                     createMediaRequest = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
                 }
                 if let createMediaRequest = createMediaRequest {
-                    if let album = self.album {
-                        let assetPlaceholder = createMediaRequest.placeholderForCreatedAsset!
+                    if let album = self.album, let assetPlaceholder = createMediaRequest.placeholderForCreatedAsset {
                         let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
                         let assets: NSArray = [assetPlaceholder]
                         albumChangeRequest?.addAssets(assets)
-                        success = true
                     }
+                    success = true
                 }
             }
             // call the callback on the media adder queue
