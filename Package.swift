@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "ParrotSDK",
+    name: "ParrotKit",
     platforms: [
         .iOS(.v15)
     ],
