@@ -1,6 +1,6 @@
-# ParrotSDK (Swift Package)
+# DroneKit (HIGHWING)
 
-Swift Package Manager (SPM) distribution of Parrot's Drone SDKs for iOS 26+ and Swift 6.2+.
+Swift Package Manager (SPM) distribution of Parrot's Drone SDKs (`DroneKit`) for iOS 26+ and Swift 6.2+.
 
 ## Overview
 
