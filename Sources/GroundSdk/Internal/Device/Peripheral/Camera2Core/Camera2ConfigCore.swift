@@ -316,7 +316,8 @@ class Camera2EditableDoubleCore: Camera2EditableDouble, EditableConfigParam {
     /// - Returns: range of supported values in rules
     private func getRange(rules: [Camera2Rule]) -> ClosedRange<Double>? {
         if let lower = rules.compactMap({selectDomain($0)?.lowerBound}).min(),
-            let upper = rules.compactMap({selectDomain($0)?.upperBound}).max() {
+            let upper = rules.compactMap({selectDomain($0)?.upperBound}).max(),
+            lower <= upper {
             return lower...upper
         } else {
             return nil
@@ -542,6 +543,8 @@ class Camera2EditorCore: Camera2Editor {
         params[.autoExposureMeteringMode] = param(Camera2Params.autoExposureMeteringMode, config: config)
         params[.storagePolicy] = param(Camera2Params.storagePolicy, config: config)
         params[.spectrum] = param(Camera2Params.spectrum, config: config)
+        params[.lowLightModeSelection] = param(Camera2Params.lowLightModeSelection, config: config)
+        params[.lowLightMode] = param(Camera2Params.lowLightMode, config: config)
 
         sortedParams = params.sorted { $0.0.rawValue > $1.0.rawValue }.compactMap { $0.value }
     }

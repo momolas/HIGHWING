@@ -91,7 +91,7 @@ public class EnumSetSettingCore<EnumType: Hashable>: EnumSetSetting<EnumType>, C
     public init(defaultValues: Set<EnumType>, supportedValues: Set<EnumType> = [],
                 didChangeDelegate: SettingChangeDelegate, backend: @escaping (Set<EnumType>) -> Bool) {
         self._values = defaultValues
-        self._values = supportedValues
+        self._supportedValues = supportedValues
         self.didChangeDelegate = didChangeDelegate
         self.backend = backend
     }

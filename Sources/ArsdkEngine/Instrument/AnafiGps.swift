@@ -155,6 +155,7 @@ class AnafiGps: DeviceComponentController {
     private func save(horizontalAccuracy: Double, verticalAccuracy: Double) {
         deviceStore.write(key: PersistedDataKey.horizontalAccuracy, value: horizontalAccuracy)
             .write(key: PersistedDataKey.verticalAccuracy, value: verticalAccuracy)
+            .commit()
     }
 }
 

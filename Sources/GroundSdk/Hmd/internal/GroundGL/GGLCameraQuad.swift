@@ -385,23 +385,28 @@ extension GGLCameraQuad {
                                                                    &_chromaTexture)
                 if err != 0 {
                     ULog.e(.hmdTag, "Error at CVOpenGLESTextureCacheCreateTextureFromImage chroma \(err)")
+                    return
                 }
             }
 
+            guard let lumaTexture = _lumaTexture, let chromaTexture = _chromaTexture else {
+                return
+            }
+
             glActiveTexture(GLenum(GL_TEXTURE0))
-            glBindTexture(CVOpenGLESTextureGetTarget(_lumaTexture!), CVOpenGLESTextureGetName(_lumaTexture!))
+            glBindTexture(CVOpenGLESTextureGetTarget(lumaTexture), CVOpenGLESTextureGetName(lumaTexture))
             glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GL_CLAMP_TO_EDGE))
             glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GL_CLAMP_TO_EDGE))
 
             glActiveTexture(GLenum(GL_TEXTURE1))
-            glBindTexture(CVOpenGLESTextureGetTarget(_chromaTexture!), CVOpenGLESTextureGetName(_chromaTexture!))
+            glBindTexture(CVOpenGLESTextureGetTarget(chromaTexture), CVOpenGLESTextureGetName(chromaTexture))
             glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_S), GLfloat(GL_CLAMP_TO_EDGE))
             glTexParameterf(GLenum(GL_TEXTURE_2D), GLenum(GL_TEXTURE_WRAP_T), GLfloat(GL_CLAMP_TO_EDGE))
 
             drawTriangles()
             glUseProgram(0)
-            glBindTexture(CVOpenGLESTextureGetTarget(_chromaTexture!), 0)
-            glBindTexture(CVOpenGLESTextureGetTarget(_lumaTexture!), 0)
+            glBindTexture(CVOpenGLESTextureGetTarget(chromaTexture), 0)
+            glBindTexture(CVOpenGLESTextureGetTarget(lumaTexture), 0)
         }
     }
 

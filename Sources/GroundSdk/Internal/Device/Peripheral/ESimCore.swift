@@ -124,7 +124,7 @@ public class ESimCore: PeripheralCore, ESim {
     }
 
     public func enableProfile(iccid: String, enable: Bool) -> Bool {
-        if !profileList.filter({ profile in return profile.iccid == iccid && profile.enabled != enable }).isEmpty {
+        if profileList.contains(where: { $0.iccid == iccid && $0.enabled != enable }) {
             if backend.enableProfile(iccid: iccid, enable: enable) {
                 applyState(state: OperationState.enable(error: nil, iccid: iccid, enabled: enable),
                            timeoutValue: defaultTimout)
@@ -135,7 +135,7 @@ public class ESimCore: PeripheralCore, ESim {
     }
 
     public func deleteProfile(iccid: String) -> Bool {
-        if !profileList.filter({ profile in return profile.iccid == iccid }).isEmpty {
+        if profileList.contains(where: { $0.iccid == iccid }) {
             if backend.deleteProfile(iccid: iccid) {
                 applyState(state: OperationState.delete(error: nil, iccid: iccid), timeoutValue: defaultTimout)
                 return true
@@ -145,7 +145,7 @@ public class ESimCore: PeripheralCore, ESim {
     }
 
     public func renameProfile(iccid: String, nickname: String) -> Bool {
-        if !profileList.filter({ profile in return profile.iccid == iccid && profile.nickname != nickname }).isEmpty {
+        if profileList.contains(where: { $0.iccid == iccid && $0.nickname != nickname }) {
             if nickname.count > 64 {
                 return false
             } else if backend.renameProfile(iccid: iccid, nickname: nickname) {

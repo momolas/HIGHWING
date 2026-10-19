@@ -70,6 +70,8 @@ class FlightLogRestApi {
                                    error.localizedDescription)
                             completion(nil)
                         }
+                    } else {
+                        completion(nil)
                     }
                 default:
                     completion(nil)
@@ -102,6 +104,8 @@ class FlightLogRestApi {
                                error.localizedDescription)
                         completion(nil)
                     }
+                } else {
+                    completion(nil)
                 }
             default:
                 completion(nil)

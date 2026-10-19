@@ -101,9 +101,9 @@ class HttpGenericClient {
             case .httpError(let error):
                 returnCode = error
                 returnHttpError = .failed
-            case .success(_):
+            case .success(let statusCode):
                 returnHttpError = .success
-                returnCode = 200
+                returnCode = statusCode
             }
             completion(returnCode, returnHttpError, data)
         }

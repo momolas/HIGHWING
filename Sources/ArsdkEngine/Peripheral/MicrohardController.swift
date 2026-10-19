@@ -120,8 +120,12 @@ extension MicrohardController: ArsdkMicrohardEventDecoderListener {
         // capabilities
         if state.hasDefaultCapabilities {
             let capabilities = state.defaultCapabilities
-            microhard.update(supportedChannelRange: UInt(capabilities.channelMin)...UInt(capabilities.channelMax))
-            microhard.update(supportedPowerRange: UInt(capabilities.powerMin)...UInt(capabilities.powerMax))
+            if capabilities.channelMin <= capabilities.channelMax {
+                microhard.update(supportedChannelRange: UInt(capabilities.channelMin)...UInt(capabilities.channelMax))
+            }
+            if capabilities.powerMin <= capabilities.powerMax {
+                microhard.update(supportedPowerRange: UInt(capabilities.powerMin)...UInt(capabilities.powerMax))
+            }
             let bandwidths = Set(capabilities.bandwidths.compactMap {MicrohardBandwidth(fromArsdk: $0)})
             microhard.update(supportedBandwidths: bandwidths)
             let encryptions = Set(capabilities.encryptionAlgorithms.compactMap {MicrohardEncryption(fromArsdk: $0)})
@@ -165,8 +169,9 @@ extension MicrohardController: ArsdkMicrohardEventDecoderListener {
         case .success(let success):
             pairingStatus = .success(networkId: pairing.networkID, deviceUid: success.deviceUid)
         case .failure(let failure):
-            pairingStatus = .failure(networkId: pairing.networkID,
-                                     reason: MicrohardPairingFailureReason(fromArsdk: failure.reason)!)
+            if let reason = MicrohardPairingFailureReason(fromArsdk: failure.reason) {
+                pairingStatus = .failure(networkId: pairing.networkID, reason: reason)
+            }
         case .none:
             break
         }
@@ -204,20 +209,27 @@ extension MicrohardConnectionParameters {
 
 /// Extension that adds conversion to `MicrohardPairingParameters`.
 extension Arsdk_Microhard_PairingParameters {
-    var gsdk: MicrohardPairingParameters {
-        MicrohardPairingParameters(channel: UInt(channel),
-                                   power: UInt(power),
-                                   bandwidth: MicrohardBandwidth(fromArsdk: bandwidth)!,
-                                   encryption: MicrohardEncryption(fromArsdk: encryptionAlgorithm)!)
+    var gsdk: MicrohardPairingParameters? {
+        guard let bandwidth = MicrohardBandwidth(fromArsdk: bandwidth),
+              let encryption = MicrohardEncryption(fromArsdk: encryptionAlgorithm) else {
+            return nil
+        }
+        return MicrohardPairingParameters(channel: UInt(channel),
+                                          power: UInt(power),
+                                          bandwidth: bandwidth,
+                                          encryption: encryption)
     }
 }
 
 /// Extension that adds conversion to `MicrohardConnectionParameters`.
 extension Arsdk_Microhard_ConnectionParameters {
-    var gsdk: MicrohardConnectionParameters {
-        MicrohardConnectionParameters(channel: UInt(channel),
-                                      power: UInt(power),
-                                      bandwidth: MicrohardBandwidth(fromArsdk: bandwidth)!)
+    var gsdk: MicrohardConnectionParameters? {
+        guard let bandwidth = MicrohardBandwidth(fromArsdk: bandwidth) else {
+            return nil
+        }
+        return MicrohardConnectionParameters(channel: UInt(channel),
+                                             power: UInt(power),
+                                             bandwidth: bandwidth)
     }
 }
 

@@ -186,9 +186,9 @@ class DriController: DeviceComponentController, DriBackend {
             presetDict: presetStore,
             presetEntry: SettingKey.mode,
             setting: dri.enabled as! BoolSettingCore,
-            notifyComponent: { self.dri.notifyUpdated() },
-            markChanged: { self.dri.markChanged() },
-            sendCommand: { mode in
+            notifyComponent: { [unowned self] in self.dri.notifyUpdated() },
+            markChanged: { [unowned self] in self.dri.markChanged() },
+            sendCommand: { [unowned self] mode in
                 return self.sendEnabledCommand(mode)
             }
         )

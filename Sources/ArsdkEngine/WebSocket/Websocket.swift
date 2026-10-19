@@ -174,6 +174,8 @@ class WebSocketClientSession: WebSocketSession {
                     // send pong
                     let pongFrame = Frame(opCode: Frame.OpCode.pong, payload: frame.payload)
                     connection.write(data: pongFrame.data)
+                case .connectionClose:
+                    delegate?.webSocketSessionDidDisconnect()
                 default:
                     break
                 }
@@ -210,7 +212,7 @@ class WebSocketClientSession: WebSocketSession {
         /// frame opCode
         let opCode: OpCode
         /// Frame masking data
-        let mask: UInt16?
+        let mask: UInt32?
         /// Frame payload
         let payload: Data
 
@@ -237,7 +239,7 @@ class WebSocketClientSession: WebSocketSession {
             }
             // Add mask size
             if mask != nil {
-                len += 2
+                len += 4
             }
             // Add payload lenght
             len += payload.count
@@ -252,10 +254,10 @@ class WebSocketClientSession: WebSocketSession {
             var fin: Bool?
             var opCode: OpCode?
             var len: Int?
-            var mask: UInt16?
+            var mask: UInt32?
             var headerLen: Int = 2
             let base = data.startIndex
-            if data.count > 2 {
+            if data.count >= 2 {
                 fin = data[base] & 0x80 != 0
                 opCode = OpCode(rawValue: data[base] & 0x0F)
                 let maskBit = data[base + 1] & 0x80 != 0
@@ -280,11 +282,11 @@ class WebSocketClientSession: WebSocketSession {
                 default: break
                 }
 
-                if maskBit, data.count >= headerLen + 2 {
-                    mask = data.subdata(in: (base + headerLen)..<(base + headerLen + 2)).withUnsafeBytes {
-                        $0.loadUnaligned(as: UInt16.self)
+                if maskBit, data.count >= headerLen + 4 {
+                    mask = data.subdata(in: (base + headerLen)..<(base + headerLen + 4)).withUnsafeBytes {
+                        $0.loadUnaligned(as: UInt32.self).bigEndian
                     }
-                    headerLen += 2
+                    headerLen += 4
                 }
             }
             if let fin = fin, let opCode = opCode, let len = len, len >= 0, data.count >= len + headerLen {
@@ -344,8 +346,11 @@ class WebSocketClientSession: WebSocketSession {
 
             // encode mask
             if let mask = mask {
-                data.append(UInt8(mask >> 4))
-                data.append(UInt8(mask))
+                withUnsafeBytes(of: mask.bigEndian) {
+                    $0.forEach { b in
+                        data.append(UInt8(b))
+                    }
+                }
             }
 
             // append Data

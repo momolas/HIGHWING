@@ -49,6 +49,15 @@ public class FileReplayCore: ReplayCore, FileReplay {
         self.backend = backend
         registerAppBackgroundObserver()
     }
+
+    deinit {
+        unregisterAppBackgroundObserver()
+    }
+
+    public override func releaseStream() {
+        unregisterAppBackgroundObserver()
+        super.releaseStream()
+    }
 }
 
 /// Extension to pause streaming when the application is put in background.

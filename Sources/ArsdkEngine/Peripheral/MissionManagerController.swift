@@ -225,18 +225,25 @@ extension MissionManagerController: ArsdkFeatureMissionCallback {
         let targetModel = DeviceModel.from(internalId: Int(targetModelId))
         switch targetModel {
         case .drone(let model):
-            if ArsdkFeatureGenericListFlagsBitField.isSet(.first, inBitField: listFlagsBitField) {
+            if ArsdkFeatureGenericListFlagsBitField.isSet(.empty, inBitField: listFlagsBitField) {
                 missions.removeAll()
-            } else if ArsdkFeatureGenericListFlagsBitField.isSet(.remove, inBitField: listFlagsBitField) {
-                missions[uid] = nil
-            }
-            let mission = MissionCore(uid: uid, description: desc, name: name, version: version,
-                                      recipientId: recipientId, targetModelId: model,
-                                      minTargetVersion: FirmwareVersion.parse(versionStr: targetMinVersion),
-                                      maxTargetVersion: FirmwareVersion.parse(versionStr: targetMaxVersion))
+            } else {
+                if ArsdkFeatureGenericListFlagsBitField.isSet(.first, inBitField: listFlagsBitField) {
+                    missions.removeAll()
+                }
+                if ArsdkFeatureGenericListFlagsBitField.isSet(.remove, inBitField: listFlagsBitField) {
+                    missions[uid] = nil
+                } else {
+                    let mission = MissionCore(uid: uid, description: desc, name: name, version: version,
+                                              recipientId: recipientId, targetModelId: model,
+                                              minTargetVersion: FirmwareVersion.parse(versionStr: targetMinVersion),
+                                              maxTargetVersion: FirmwareVersion.parse(versionStr: targetMaxVersion))
 
-            missions[uid] = mission
-            if ArsdkFeatureGenericListFlagsBitField.isSet(.last, inBitField: listFlagsBitField) {
+                    missions[uid] = mission
+                }
+            }
+            if ArsdkFeatureGenericListFlagsBitField.isSet(.last, inBitField: listFlagsBitField) ||
+                ArsdkFeatureGenericListFlagsBitField.isSet(.empty, inBitField: listFlagsBitField) {
                 capabilitiesDidChange(.missions(missions))
                 missionManager.update(missions: missions).notifyUpdated()
             }
@@ -384,5 +391,11 @@ private struct MissionStorable: StorableType, Hashable {
 
     static func == (lhs: MissionStorable, rhs: MissionStorable) -> Bool {
         return lhs.uid == rhs.uid && lhs.description == rhs.description && lhs.name == rhs.name
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(uid)
+        hasher.combine(description)
+        hasher.combine(name)
     }
 }

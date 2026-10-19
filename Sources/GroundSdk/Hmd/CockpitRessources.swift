@@ -151,17 +151,26 @@ class CockpitRessources {
 
         // Magic
         var index = 20 // magic size
+        guard data.count >= index + 1 + 4 else {
+            ULog.e(.hmdTag, "CockpitsRessources(\(fileURL)) - invalid header size")
+            return nil
+        }
 
         // 1 byte: version (1)
         version = Int(data.subdata(in: index ..< (index + 1)).int8Data())
         index += 1
 
         // JSON Header length (Int 4 bytes)
-        let lengthJson = data.subdata(in: index ..< (index + 4)).int32Data()
+        let lengthJson = Int(data.subdata(in: index ..< (index + 4)).int32Data())
         index += 4
 
-        let dataJson = data.subdata(in: index ..< index+Int(lengthJson))
-        binaryOffset = Int(index) + Int(lengthJson)
+        guard lengthJson >= 0, index + lengthJson <= data.count else {
+            ULog.e(.hmdTag, "CockpitsRessources(\(fileURL)) - invalid JSON length \(lengthJson)")
+            return nil
+        }
+
+        let dataJson = data.subdata(in: index ..< index + lengthJson)
+        binaryOffset = index + lengthJson
         cockpits = readCockpits(data: dataJson)
     }
 
@@ -241,13 +250,19 @@ class CockpitRessources {
 extension Data {
 
     func int8Data(atOffset: Int = 0) -> Int8 {
+        guard atOffset >= 0, atOffset + MemoryLayout<Int8>.size <= count else {
+            return 0
+        }
         return self.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: atOffset, as: Int8.self) }
     }
 
     func int32Data(atOffset: Int = 0, bigEndian: Bool = false) -> Int32 {
+        guard atOffset >= 0, atOffset + MemoryLayout<Int32>.size <= count else {
+            return 0
+        }
         return self.withUnsafeBytes {
-            let ret = $0.loadUnaligned(fromByteOffset: atOffset, as: Int32.self)
-            return bigEndian ? ret : ret.bigEndian
+            let raw = $0.loadUnaligned(fromByteOffset: atOffset, as: Int32.self)
+            return bigEndian ? Int32(bigEndian: raw) : Int32(littleEndian: raw)
         }
     }
 

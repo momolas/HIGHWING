@@ -71,7 +71,10 @@ class MediaRestApi {
                 switch result {
                 case .success:
                     // listing medias is successful
-                    guard let data = data else { return }
+                    guard let data = data else {
+                        completion(nil)
+                        return
+                    }
                     let decoder = JSONDecoder()
                     // need to override the way date are parsed because default format is iso8601 extended
                     decoder.dateDecodingStrategy = .formatted(.iso8601Base)
@@ -80,7 +83,7 @@ class MediaRestApi {
                         let throwables = try decoder.decode([Throwable<Media>].self, from: data)
                         let mediaList = throwables.compactMap { try? $0.result.get() }
                         // transform the json object media list into a `MediaItemCore` list
-                        let medias = mediaList.map { MediaItemCore.from(httpMedia: $0) }.compactMap { $0 }
+                        let medias = mediaList.compactMap { MediaItemCore.from(httpMedia: $0) }
                         completion(medias)
                     } catch let error {
                         ULog.w(.mediaTag, "Failed to decode data \(String(data: data, encoding: .utf8) ?? ""): " +

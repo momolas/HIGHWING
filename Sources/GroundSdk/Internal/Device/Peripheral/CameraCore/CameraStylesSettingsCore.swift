@@ -71,6 +71,9 @@ private class CameraStyleParameterCore: CameraStyleParameter, CustomDebugStringC
     /// - Parameter newSupportedModes: new supported modes
     /// - Returns: true if the setting has been changed, false else
     func update(min newMin: Int, value newValue: Int, max newMax: Int) -> Bool {
+        guard newMin <= newMax else {
+            return false
+        }
         if newMin != min || newValue != value || newMax != max {
             mutable = newMin != newMax
             range = newMin...newMax

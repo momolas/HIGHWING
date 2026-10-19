@@ -126,7 +126,7 @@ extension MissionUpdaterController: MissionUpdaterBackend {
                 if let missionDetail = missionDetail, let assets = missionDetail.assets, !assets.isEmpty {
                     self.downloadAssetQueue = assets
                     self.cleanAssets(in: self.missionAssetStorage.workDir
-                        .appendingPathComponent(mission.uid).absoluteString)
+                        .appendingPathComponent(mission.uid))
                     self.downloadNextAsset(mission: missionDetail)
                     self.pendingMissions.removeValue(forKey: missionDetail.uid)
                 } else {
@@ -146,13 +146,14 @@ extension MissionUpdaterController: MissionUpdaterBackend {
     private func cleanUpMissionAssetStorage() {
         let fileManager = FileManager.default
         do {
-            let missionFolders = try fileManager.contentsOfDirectory(atPath: missionAssetStorage.workDir.path)
+            let missionFolders = try fileManager.contentsOfDirectory(
+                at: missionAssetStorage.workDir, includingPropertiesForKeys: nil)
             for folder in missionFolders {
-                let folderName = URL(fileURLWithPath: folder).lastPathComponent
+                let folderName = folder.lastPathComponent
                 if pendingMissions.keys.contains(folderName) == false {
                     // Remove the entire mission folder if it is not pending
                     do {
-                        try fileManager.removeItem(atPath: folder)
+                        try fileManager.removeItem(at: folder)
                     } catch {
                         ULog.e(.missionsTag, "Error deleting folder: \(folder): \(error)")
                     }
@@ -191,22 +192,22 @@ extension MissionUpdaterController: MissionUpdaterBackend {
     }
 
     /// Remove local saved assets not anymore existing in the drone.
-    private func cleanAssets(in folderPath: String) {
+    private func cleanAssets(in folderUrl: URL) {
         let fileManager = FileManager.default
         do {
-            let assets = try fileManager.contentsOfDirectory(atPath: folderPath)
+            let assets = try fileManager.contentsOfDirectory(at: folderUrl, includingPropertiesForKeys: nil)
             for asset in assets {
-                let fileName = URL(fileURLWithPath: asset).lastPathComponent
+                let fileName = asset.lastPathComponent
                 if !downloadAssetQueue.contains(where: { URL(fileURLWithPath: $0).lastPathComponent == fileName }) {
                     do {
-                        try fileManager.removeItem(atPath: asset)
+                        try fileManager.removeItem(at: asset)
                     } catch {
                         ULog.e(.missionsTag, "Error deleting asset \(asset): \(error)")
                     }
                 }
             }
         } catch {
-            ULog.e(.missionsTag, "Failed to clean assets in folder \(folderPath): \(error)")
+            ULog.e(.missionsTag, "Failed to clean assets in folder \(folderUrl): \(error)")
         }
     }
 

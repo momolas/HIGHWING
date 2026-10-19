@@ -269,7 +269,7 @@ class FlightLogEngine: FlightLogEngineBase {
                 return
             }
             queue.async {
-                result = Anonymizer.convert(flightLog.path, outFile: outFile.path, profile: profile)
+                result = Anonymizer.convert(processingFlightLog.path, outFile: outFile.path, profile: profile)
                 DispatchQueue.main.async { [weak self] in
                     // move file back
                     do {

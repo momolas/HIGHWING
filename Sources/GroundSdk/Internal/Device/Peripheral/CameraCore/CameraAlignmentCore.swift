@@ -190,7 +190,8 @@ extension CameraAlignmentCore {
     public func update(yawLowerBound: Double, yaw: Double, yawUpperBound: Double) -> Bool {
         var changed = false
 
-        if supportedYawRange.lowerBound != yawLowerBound || supportedYawRange.upperBound != yawUpperBound {
+        if yawLowerBound <= yawUpperBound,
+           supportedYawRange.lowerBound != yawLowerBound || supportedYawRange.upperBound != yawUpperBound {
             supportedYawRange = yawLowerBound...yawUpperBound
             changed = true
         }
@@ -213,7 +214,8 @@ extension CameraAlignmentCore {
     public func update(pitchLowerBound: Double, pitch: Double, pitchUpperBound: Double) -> Bool {
         var changed = false
 
-        if supportedPitchRange.lowerBound != pitchLowerBound || supportedPitchRange.upperBound != pitchUpperBound {
+        if pitchLowerBound <= pitchUpperBound,
+           supportedPitchRange.lowerBound != pitchLowerBound || supportedPitchRange.upperBound != pitchUpperBound {
             supportedPitchRange = pitchLowerBound...pitchUpperBound
             changed = true
         }
@@ -236,7 +238,8 @@ extension CameraAlignmentCore {
     public func update(rollLowerBound: Double, roll: Double, rollUpperBound: Double) -> Bool {
         var changed = false
 
-        if supportedRollRange.lowerBound != rollLowerBound || supportedRollRange.upperBound != rollUpperBound {
+        if rollLowerBound <= rollUpperBound,
+           supportedRollRange.lowerBound != rollLowerBound || supportedRollRange.upperBound != rollUpperBound {
             supportedRollRange = rollLowerBound...rollUpperBound
             changed = true
         }

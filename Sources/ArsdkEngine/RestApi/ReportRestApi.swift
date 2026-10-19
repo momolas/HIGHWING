@@ -88,6 +88,8 @@ class ReportRestApi {
                                    error.localizedDescription)
                             completion(nil)
                         }
+                    } else {
+                        completion(nil)
                     }
                 default:
                     completion(nil)

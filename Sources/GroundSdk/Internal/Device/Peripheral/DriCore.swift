@@ -330,10 +330,7 @@ extension DriTypeConfig {
             // invalid operator length
             return false
         }
-        let uasOperatorSet = CharacterSet(charactersIn: uasOperator)
-        let ascii = String(Array(0...127).map { Character(Unicode.Scalar($0)) })
-        let asciiSet = CharacterSet(charactersIn: ascii)
-        return asciiSet.isSuperset(of: uasOperatorSet)
+        return uasOperator.allSatisfy(\.isASCII)
     }
 }
 

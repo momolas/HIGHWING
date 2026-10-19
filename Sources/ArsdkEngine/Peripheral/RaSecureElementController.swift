@@ -60,6 +60,9 @@ class RaSecureElementController: DeviceComponentController, SecureElementBackend
     }
 
     override func remoteAntennaDidConnect() {
+        if let raDeviceServer = (deviceController as? RCController)?.remoteAntenna?.deviceServer {
+            secureElementApi = SecureElementRestApi(server: raDeviceServer)
+        }
         retrieveCertificate()
         secureElement.publish()
     }
@@ -68,6 +71,7 @@ class RaSecureElementController: DeviceComponentController, SecureElementBackend
         delegate.cancel()
         certificateRequest?.cancel()
         certificateRequest = nil
+        secureElementApi = nil
         secureElement.unpublish()
     }
 
@@ -124,6 +128,8 @@ class RaSecureElementController: DeviceComponentController, SecureElementBackend
     }
 
     func cancel() {
-        // nothing to do
+        delegate.cancel()
+        certificateRequest?.cancel()
+        certificateRequest = nil
     }
 }

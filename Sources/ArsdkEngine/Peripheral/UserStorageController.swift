@@ -104,8 +104,10 @@ extension UserStorageController: UserStorageBackend {
         var commandSent = false
         if !formattingTypeSupported {
             if userStorageType != nil {
-                commandSent = sendCommand(ArsdkFeatureUserStorageV2.formatEncoder(storageId: userStorageId!,
-                                                                    label: newMediaName ?? ""))
+                if let userStorageId = userStorageId {
+                    commandSent = sendCommand(ArsdkFeatureUserStorageV2.formatEncoder(storageId: userStorageId,
+                                                                                      label: newMediaName ?? ""))
+                }
             } else {
                 commandSent = sendCommand(ArsdkFeatureUserStorage.formatEncoder(label: newMediaName ?? ""))
             }
@@ -113,18 +115,24 @@ extension UserStorageController: UserStorageBackend {
             switch formattingType {
             case .quick:
                 if userStorageType != nil {
-                    commandSent = sendCommand(ArsdkFeatureUserStorageV2.formatWithTypeEncoder(storageId: userStorageId!,
-                                                                                label: newMediaName ?? "",
-                                                                                type: .quick))
+                    if let userStorageId = userStorageId {
+                        commandSent = sendCommand(
+                            ArsdkFeatureUserStorageV2.formatWithTypeEncoder(storageId: userStorageId,
+                                                                            label: newMediaName ?? "",
+                                                                            type: .quick))
+                    }
                 } else {
                     commandSent = sendCommand(ArsdkFeatureUserStorage.formatWithTypeEncoder(label: newMediaName ?? "",
                                                                               type: .quick))
                 }
             case .full:
                 if userStorageType != nil {
-                    commandSent = sendCommand(ArsdkFeatureUserStorageV2.formatWithTypeEncoder(storageId: userStorageId!,
-                                                                                label: newMediaName ?? "",
-                                                                                type: .full))
+                    if let userStorageId = userStorageId {
+                        commandSent = sendCommand(
+                            ArsdkFeatureUserStorageV2.formatWithTypeEncoder(storageId: userStorageId,
+                                                                            label: newMediaName ?? "",
+                                                                            type: .full))
+                    }
                 } else {
                     commandSent = sendCommand(ArsdkFeatureUserStorage.formatWithTypeEncoder(label: newMediaName ?? "",
                                                                               type: .full))
@@ -144,10 +152,12 @@ extension UserStorageController: UserStorageBackend {
             switch formattingType {
             case .quick:
                 if userStorageType != nil {
-                    commandSent = sendCommand(ArsdkFeatureUserStorageV2
-                        .formatWithEncryptionEncoder(storageId: userStorageId!,
-                                                     label: newMediaName ?? "",
-                                                     password: password, type: .quick))
+                    if let userStorageId = userStorageId {
+                        commandSent = sendCommand(ArsdkFeatureUserStorageV2
+                            .formatWithEncryptionEncoder(storageId: userStorageId,
+                                                         label: newMediaName ?? "",
+                                                         password: password, type: .quick))
+                    }
                 } else {
                     commandSent = sendCommand(ArsdkFeatureUserStorage
                         .formatWithEncryptionEncoder(label: newMediaName ?? "",
@@ -155,10 +165,12 @@ extension UserStorageController: UserStorageBackend {
                 }
             case .full:
                 if userStorageType != nil {
-                    commandSent = sendCommand(ArsdkFeatureUserStorageV2
-                        .formatWithEncryptionEncoder(storageId: userStorageId!,
-                                                     label: newMediaName ?? "",
-                                                     password: password, type: .full))
+                    if let userStorageId = userStorageId {
+                        commandSent = sendCommand(ArsdkFeatureUserStorageV2
+                            .formatWithEncryptionEncoder(storageId: userStorageId,
+                                                         label: newMediaName ?? "",
+                                                         password: password, type: .full))
+                    }
                 } else {
                     commandSent = sendCommand(ArsdkFeatureUserStorage
                         .formatWithEncryptionEncoder(label: newMediaName ?? "",
@@ -177,7 +189,8 @@ extension UserStorageController: UserStorageBackend {
         switch usage {
         case .record:
             if userStorageType != nil {
-                return sendCommand(ArsdkFeatureUserStorageV2.encryptionPasswordEncoder(storageId: userStorageId!,
+                guard let userStorageId = userStorageId else { return false }
+                return sendCommand(ArsdkFeatureUserStorageV2.encryptionPasswordEncoder(storageId: userStorageId,
                                                                                        password: password,
                                                                                        type: .record))
             } else {
@@ -185,7 +198,8 @@ extension UserStorageController: UserStorageBackend {
             }
         case .usb:
             if userStorageType != nil {
-                return sendCommand(ArsdkFeatureUserStorageV2.encryptionPasswordEncoder(storageId: userStorageId!,
+                guard let userStorageId = userStorageId else { return false }
+                return sendCommand(ArsdkFeatureUserStorageV2.encryptionPasswordEncoder(storageId: userStorageId,
                                                                                 password: password, type: .usb))
             } else {
                 return sendCommand(ArsdkFeatureUserStorage.encryptionPasswordEncoder(password: password, type: .usb))
@@ -397,10 +411,12 @@ extension UserStorageController {
             updateState(newFileSystemState)
         }
         latestState = newFileSystemState
-        if newFileSystemState == .ready && monitorEnabled == 0 {
-            _ = sendCommand(ArsdkFeatureUserStorageV2.startMonitoringEncoder(storageId: userStorageId!, period: 0))
-        } else if newFileSystemState != .ready && monitorEnabled == 1 {
-            _ = sendCommand(ArsdkFeatureUserStorageV2.stopMonitoringEncoder(storageId: userStorageId!))
+        if let userStorageId = userStorageId {
+            if newFileSystemState == .ready && monitorEnabled == 0 {
+                _ = sendCommand(ArsdkFeatureUserStorageV2.startMonitoringEncoder(storageId: userStorageId, period: 0))
+            } else if newFileSystemState != .ready && monitorEnabled == 1 {
+                _ = sendCommand(ArsdkFeatureUserStorageV2.stopMonitoringEncoder(storageId: userStorageId))
+            }
         }
     }
 
@@ -467,6 +483,7 @@ extension UserStorageController {
             fallthrough
         @unknown default:
             ULog.w(.tag, "Unknown result, skipping this event.")
+            return
         }
         updateFormatProgress(formattingStep: formattingStep, formattingProgress: Int(percentage))
     }
@@ -484,6 +501,7 @@ extension UserStorageController {
             fallthrough
         @unknown default:
             ULog.w(.tag, "Unknown result, skipping this event.")
+            return
         }
         updateFormatProgress(formattingStep: formattingStep, formattingProgress: Int(percentage))
     }

@@ -115,6 +115,6 @@ public class HmdSprite: Hashable {
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(imageName)
+        hasher.combine(ObjectIdentifier(self))
     }
 }

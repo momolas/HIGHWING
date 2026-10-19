@@ -172,6 +172,9 @@ class FlightCameraRecordEngine: EngineBaseCore {
     /// Flight camera record engine upload queue
     private let queue = DispatchQueue(label: "com.parrot.gsdk.flightCameraRecord", qos: .background)
 
+    /// Reusable Core Image context for anonymization blur rendering
+    private lazy var ciContext = CIContext()
+
     /// Extension of processing camera record files
     private var processingExtension = "processing"
 
@@ -617,24 +620,11 @@ class FlightCameraRecordEngine: EngineBaseCore {
         if let blurUrl = originalFile.blurUrl, !FileManager.default.fileExists(atPath: blurUrl.path),
             let image = UIImage(contentsOfFile: originalFile.path) {
             // get metadata to copy in new image.
-            var data: Data?
-            do {
-                data = try Data(contentsOf: originalFile)
-            } catch {
-                ULog.w(.parrotCloudFcrTag, "Cannot get data from URL \(originalFile.absoluteString)")
-                return
-            }
-            var xmp: CGImageMetadata?
-            var exif: CFDictionary?
-            if let data = data, let imageSource = CGImageSourceCreateWithData(data as CFData, nil) {
+            if let imageSource = CGImageSourceCreateWithURL(originalFile as CFURL, nil) {
                 /// xmp
-                if CGImageSourceCopyMetadataAtIndex(imageSource, 0, nil) != nil {
-                    xmp = CGImageSourceCopyMetadataAtIndex(imageSource, 0, nil)
-                }
+                let xmp = CGImageSourceCopyMetadataAtIndex(imageSource, 0, nil)
                 /// exif
-                if let imageProperties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) {
-                    exif = imageProperties
-                }
+                let exif = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil)
 
                 /// anonymize image
                 let imageSize = image.size
@@ -668,20 +658,13 @@ class FlightCameraRecordEngine: EngineBaseCore {
                 filter.setValue(ciInput, forKey: kCIInputImageKey)
                 filter.setValue(maxRadius, forKey: kCIInputRadiusKey)
 
-                let ciContext = CIContext()
-
-                if let ciOutput = filter.outputImage, let cgImage = ciContext.createCGImage(ciOutput, from: rect) {
-                    let blurredImage = UIImage(cgImage: cgImage)
-                    // save image with xmp and exif
-                    if let type = CGImageSourceGetType(imageSource),
-                       let destination = CGImageDestinationCreateWithURL(blurUrl as CFURL, type, 1, nil),
-                       let cgImage = image.cgImage, let dataNewImage = blurredImage.jpegData(compressionQuality: 0.9),
-                       let sourceNewImage = CGImageSourceCreateWithData(dataNewImage as CFData, nil) {
-                        ULog.d(.parrotCloudFcrTag, "Save blur file")
-                        CGImageDestinationAddImageAndMetadata(destination, cgImage, (xmp), nil)
-                        CGImageDestinationAddImageFromSource(destination, sourceNewImage, 0, (exif as CFDictionary?))
-                        CGImageDestinationFinalize(destination)
-                    }
+                if let ciOutput = filter.outputImage,
+                   let blurredCGImage = ciContext.createCGImage(ciOutput, from: rect),
+                   let type = CGImageSourceGetType(imageSource),
+                   let destination = CGImageDestinationCreateWithURL(blurUrl as CFURL, type, 1, nil) {
+                    ULog.d(.parrotCloudFcrTag, "Save blur file")
+                    CGImageDestinationAddImageAndMetadata(destination, blurredCGImage, xmp, exif)
+                    CGImageDestinationFinalize(destination)
                 }
             } else {
                 ULog.w(.parrotCloudFcrTag, "Cannot get metadata from image")
@@ -699,15 +682,8 @@ class FlightCameraRecordEngine: EngineBaseCore {
     private func createJson(originalFile: URL, descriptor: FcrAnonymizationDescriptor) {
         ULog.d(.parrotCloudFcrTag, "Create JSON file")
         if let jsonUrl = originalFile.jsonUrl, !FileManager.default.fileExists(atPath: jsonUrl.path) {
-            var data: Data?
-            do {
-                data = try Data(contentsOf: originalFile)
-            } catch {
-                ULog.d(.parrotCloudFcrTag, "Cannot get data from URL \(originalFile.absoluteString)")
-                return
-            }
             var imageSize: CGSize?
-            if let data, let imageSource = CGImageSourceCreateWithData(data as CFData, nil) {
+            if let imageSource = CGImageSourceCreateWithURL(originalFile as CFURL, nil) {
                 if let imageProperties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [CFString: Any],
                    let width = (imageProperties[kCGImagePropertyPixelWidth] as? NSNumber)?.intValue,
                    let height = (imageProperties[kCGImagePropertyPixelHeight] as? NSNumber)?.intValue {
@@ -773,13 +749,17 @@ class FlightCameraRecordEngine: EngineBaseCore {
 extension URL {
     /// Blur Url.
     var blurUrl: URL? {
-        return URL(string: self.absoluteString
-            .replacingOccurrences(of: "." + self.pathExtension, with: "-blur." + self.pathExtension))
+        let ext = self.pathExtension
+        guard !ext.isEmpty else { return nil }
+        let baseName = self.deletingPathExtension().lastPathComponent
+        return self.deletingLastPathComponent()
+            .appendingPathComponent(baseName + "-blur")
+            .appendingPathExtension(ext)
     }
 
     /// Json url
     var jsonUrl: URL? {
-        return URL(string: self.absoluteString
-            .replacingOccurrences(of: "." + self.pathExtension, with: "." + self.pathExtension + ".json"))
+        guard !self.pathExtension.isEmpty else { return nil }
+        return self.deletingPathExtension().appendingPathExtension("json")
     }
 }

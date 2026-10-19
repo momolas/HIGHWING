@@ -233,7 +233,7 @@ class ThermalControllerBase: DeviceComponentController, ThermalControlCoreBacken
         presetStore?.write(key: SettingKey.paletteKey, value: palette).commit()
 
         if !connected {
-            thermalControl.update(palette: palette)
+            thermalControl.update(palette: palette).notifyUpdated()
             return false
         }
 
@@ -822,7 +822,7 @@ extension ThermalControllerBase: ArsdkFeatureThermalCallback {
             let color = ThermalColor(Double(red), Double(green), Double(blue), Double(index))
             if ArsdkFeatureGenericListFlagsBitField.isSet(.remove, inBitField: listFlagsBitField) {
                 currentColors?.removeAll(where: { $0 == color })
-                settingDidChange(.colors([]))
+                settingDidChange(.colors(currentColors ?? []))
             } else {
                 if ArsdkFeatureGenericListFlagsBitField.isSet(.first, inBitField: listFlagsBitField) {
                     paletteParts = []

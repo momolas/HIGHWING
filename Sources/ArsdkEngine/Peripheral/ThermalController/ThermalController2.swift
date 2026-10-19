@@ -205,11 +205,11 @@ class ThermalController2: DeviceComponentController, ThermalControl2CoreBackend 
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.powerSavingModeKey,
             setting: thermalControl.powerSavingMode as! EnumSettingCore,
-            notifyComponent: {
-            self.thermalControl.notifyUpdated()
-            }, markChanged: {
+            notifyComponent: { [unowned self] in
+                self.thermalControl.notifyUpdated()
+            }, markChanged: { [unowned self] in
                 self.thermalControl.markChanged()
-            }, sendCommand: { powerSavingMode in
+            }, sendCommand: { [unowned self] powerSavingMode in
                 self.sendPowerSavingModeCommand(powerSavingMode)
         })
 
@@ -217,11 +217,11 @@ class ThermalController2: DeviceComponentController, ThermalControl2CoreBackend 
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.mixingModeKey,
             setting: thermalControl.mixingMode as! EnumSettingCore,
-            notifyComponent: {
-            self.thermalControl.notifyUpdated()
-            }, markChanged: {
+            notifyComponent: { [unowned self] in
+                self.thermalControl.notifyUpdated()
+            }, markChanged: { [unowned self] in
                 self.thermalControl.markChanged()
-            }, sendCommand: { mixingMode in
+            }, sendCommand: { [unowned self] mixingMode in
                 self.sendMixingModeCommand(mixingMode)
         })
 
@@ -229,11 +229,11 @@ class ThermalController2: DeviceComponentController, ThermalControl2CoreBackend 
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.edgeCoefficientKey,
             setting: thermalControl.edgeCoefficient as! DoubleSettingCore,
-            notifyComponent: {
+            notifyComponent: { [unowned self] in
                 self.thermalControl.notifyUpdated()
-            }, markChanged: {
+            }, markChanged: { [unowned self] in
                 self.thermalControl.markChanged()
-            }, sendCommand: { edgeCoefficient in
+            }, sendCommand: { [unowned self] edgeCoefficient in
                 self.sendEdgeCoefficientCommand(edgeCoefficient)
             }
         )
@@ -242,11 +242,11 @@ class ThermalController2: DeviceComponentController, ThermalControl2CoreBackend 
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.minColorizationThresholdKey,
             setting: thermalControl.minColorizationThreshold as! DoubleSettingCore,
-            notifyComponent: {
+            notifyComponent: { [unowned self] in
                 self.thermalControl.notifyUpdated()
-            }, markChanged: {
+            }, markChanged: { [unowned self] in
                 self.thermalControl.markChanged()
-            }, sendCommand: { min in
+            }, sendCommand: { [unowned self] min in
                 self.sendMinColorizationThresholdCommand(min)
             }
         )
@@ -255,11 +255,11 @@ class ThermalController2: DeviceComponentController, ThermalControl2CoreBackend 
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.maxColorizationThresholdKey,
             setting: thermalControl.maxColorizationThreshold as! DoubleSettingCore,
-            notifyComponent: {
+            notifyComponent: { [unowned self] in
                 self.thermalControl.notifyUpdated()
-            }, markChanged: {
+            }, markChanged: { [unowned self] in
                 self.thermalControl.markChanged()
-            }, sendCommand: { max in
+            }, sendCommand: { [unowned self] max in
                 self.sendMaxColorizationThresholdCommand(max)
             }
         )
@@ -267,11 +267,11 @@ class ThermalController2: DeviceComponentController, ThermalControl2CoreBackend 
         rangeLockedSetting = OfflineBoolSetting(
             presetDict: presetStore, presetEntry: SettingKey.rangeLockedKey,
             setting: thermalControl.rangeLocked as! BoolSettingCore,
-            notifyComponent: {
+            notifyComponent: { [unowned self] in
                 self.thermalControl.notifyUpdated()
-            }, markChanged: {
+            }, markChanged: { [unowned self] in
                 self.thermalControl.markChanged()
-            }, sendCommand: { locked in
+            }, sendCommand: { [unowned self] locked in
                 self.sendRangeLockedCommand(locked)
             })
 
@@ -353,7 +353,7 @@ class ThermalController2: DeviceComponentController, ThermalControl2CoreBackend 
         if connected {
             return sendPaletteCommand(palette: palette)
         } else {
-            thermalControl.update(palette: palette)
+            thermalControl.update(palette: palette).notifyUpdated()
             return false
         }
     }

@@ -111,7 +111,7 @@ class GimbalFeatureGimbal: GimbalFeatureCalibratableGimbal {
                         self.sentCnt = self.maxRepeatedSent
                     }
 
-                    let allTargetsAreZero = (target.values.reduce(0.0, +) == 0)
+                    let allTargetsAreZero = target.values.allSatisfy { $0 == 0 }
                     // only decrement the counter if the control is in position,
                     // or, if the control is in velocity and all velocity targets are null or zero
                     if self.sentCnt >= 0 && (controlMode == .position || allTargetsAreZero) {

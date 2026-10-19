@@ -254,7 +254,9 @@ extension ArsdkDtedStore: DtedStoreBackend {
         ///   - ratio: current file upload between 0.0 (0%) and 1.0 (100%)
         ///   - status: upload progress status
         func notifyProgress(currentEntry: Entry?, ratio: Float, status: DtedTaskStatus) {
-            let totalProgress = (Float(uploadedFileSize) + Float(currentEntry?.size ?? 0) * ratio) / totalSize
+            let totalProgress = totalSize > 0
+                ? (Float(uploadedFileSize) + Float(currentEntry?.size ?? 0) * ratio) / totalSize
+                : 0.0
             progress(DtedUploaderCore(totalFileCount: entries.count,
                                       uploadedFileCount: uploadedFileCount, currentFileProgress: ratio,
                                       totalProgress: totalProgress, status: status,

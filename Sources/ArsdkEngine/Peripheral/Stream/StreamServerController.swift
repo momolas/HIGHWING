@@ -231,7 +231,7 @@ class StreamServerController: DeviceComponentController, StreamServerBackend {
         /// Called when the stream would like to be open, following an explicit request of play or pause.
         func streamWouldOpen() {
             guard let index = streamServerCtrl.controllers.firstIndex(of: streamCtrl) else {
-                fatalError("strmCtrl not found")
+                return
             }
 
             ULog.d(.streamTag,

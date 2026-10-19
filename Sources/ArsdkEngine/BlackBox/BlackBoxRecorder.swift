@@ -89,8 +89,9 @@ class BlackBoxRecorder {
             session = BlackBoxContext(blackBoxBufferCapacity: blackBoxBufferCapacity, blackBoxReadyCb: { blackBox in
                 self.blackBoxStorage.notifyBlackBoxDataReady(blackBoxData: blackBox)
             }, closeCb: {
-                self.sessions[masterUid] = session
+                self.sessions[masterUid] = nil
             })
+            sessions[masterUid] = session
         }
         return session!
     }

@@ -79,8 +79,8 @@ extension MavlinkStandard {
             public static func == (lhs: ParseError, rhs: ParseError) -> Bool {
                 switch (lhs, rhs) {
                 case (.generic, .generic),
-                     (.invalidParameter, invalidParameter),
-                     (.invalidLine, invalidLine),
+                     (.invalidParameter, .invalidParameter),
+                     (.invalidLine, .invalidLine),
                      (.incorrectNumberOfParameters, .incorrectNumberOfParameters),
                      (.invalidVersion, .invalidVersion):
                     return true

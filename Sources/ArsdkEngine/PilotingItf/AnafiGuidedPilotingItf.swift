@@ -166,7 +166,7 @@ extension AnafiGuidedPilotingItf: ArsdkFeatureArdrone3PilotingstateCallback {
             case .headingStart:
                 orientationDirective = .headingStart(Double(heading))
             case .headingDuring:
-                orientationDirective = .headingStart(Double(heading))
+                orientationDirective = .headingDuring(Double(heading))
             case .sdkCoreUnknown:
                 fallthrough
             @unknown default:

@@ -53,8 +53,11 @@ struct DroneKitBugProTests {
         // Construct a synthetic buffer with odd offsets (e.g., offset 1, 3, 5)
         var raw = Data([0xAA, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC])
         #expect(raw.int8Data(atOffset: 1) == 0x12)
-        // At odd offset 1: 0x12345678 in bigEndian
-        #expect(raw.int32Data(atOffset: 1, bigEndian: false) == 0x12345678)
+        // At odd offset 1: [0x12, 0x34, 0x56, 0x78] -> bigEndian is 0x12345678, littleEndian is 0x78563412
+        #expect(raw.int32Data(atOffset: 1, bigEndian: true) == 0x12345678)
+        #expect(raw.int32Data(atOffset: 1, bigEndian: false) == 0x78563412)
+        // Out-of-bounds offset safely returns 0 instead of trapping
+        #expect(raw.int32Data(atOffset: 100, bigEndian: true) == 0)
 
         let slice = raw.subDataNoCopy(offset: 1, size: 4)
         #expect(slice.count == 4)
@@ -71,7 +74,7 @@ struct DroneKitBugProTests {
         #expect(raw.getInt(at: 1, size: 4) != 0)
     }
 
-    @Test("WebSocket Frame decoding supports non-zero startIndex Data slices")
+    @Test("WebSocket Frame decoding supports non-zero startIndex Data slices, 2-byte frames, and 32-bit masks")
     func webSocketFrameSliceDecoding() throws {
         // Prefix 3 padding bytes so the slice has startIndex == 3
         var buffer = Data([0xFF, 0xFE, 0xFD])
@@ -85,6 +88,57 @@ struct DroneKitBugProTests {
         #expect(frame.fin == true)
         #expect(frame.opCode == .text)
         #expect(String(data: frame.payload, encoding: .utf8) == "test")
+
+        // 2-byte unmasked ping frame (FIN=1, opcode=9, len=0)
+        let pingData = Data([0x89, 0x00])
+        let pingFrame = try #require(WebSocketClientSession.Frame(data: pingData))
+        #expect(pingFrame.opCode == .ping)
+        #expect(pingFrame.payload.isEmpty)
+        #expect(pingFrame.len == 2)
+
+        // 32-bit masked frame round-trip
+        let maskedData = Data([0x81, 0x82, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66])
+        let maskedFrame = try #require(WebSocketClientSession.Frame(data: maskedData))
+        #expect(maskedFrame.mask == 0x11223344)
+        #expect(maskedFrame.len == 8)
+        #expect(maskedFrame.data == maskedData)
+    }
+
+    @Test("MavlinkCommand.ParseError Equatable, EnumSetSettingCore, Int.gcd, and Gimbal opposing velocities")
+    func logicBugRegressions() {
+        // L1: MavlinkStandard.MavlinkCommand.ParseError.== must not wildcard-match RHS
+        #expect(MavlinkStandard.MavlinkCommand.ParseError.invalidParameter("1") == .invalidParameter("2"))
+        #expect(MavlinkStandard.MavlinkCommand.ParseError.invalidParameter("1") != .generic)
+        #expect(MavlinkStandard.MavlinkCommand.ParseError.invalidLine("1") == .invalidLine("5"))
+        #expect(MavlinkStandard.MavlinkCommand.ParseError.invalidLine("1") != .invalidVersion)
+
+        // L2: EnumSetSettingCore preserves both defaultValues and supportedValues
+        enum DummyFlag: CaseIterable { case a, b, c }
+        final class DummyDelegate: SettingChangeDelegate {
+            func userDidChangeSetting() {}
+        }
+        let delegate = DummyDelegate()
+        let setting = EnumSetSettingCore<DummyFlag>(
+            defaultValues: [.a],
+            supportedValues: [.a, .b],
+            didChangeDelegate: delegate,
+            backend: { _ in true }
+        )
+        #expect(setting.values == [.a])
+        #expect(setting.supportedValues == [.a, .b])
+
+        // L14: Int.gcd handles b == 0 and negative values safely
+        #expect(Int.gcd(12, 0) == 12)
+        #expect(Int.gcd(0, 15) == 15)
+        #expect(Int.gcd(-18, 24) == 6)
+
+        // L17: GimbalControlCommandEncoder continues sending when opposing axes sum to 0.0
+        let gimbalEncoder = GimbalFeatureGimbal.GimbalControlCommandEncoder()
+        gimbalEncoder.setInitialStabilizations([.pitch: true, .roll: false, .yaw: true])
+        gimbalEncoder.control(mode: .velocity, yaw: 0.5, pitch: -0.5, roll: nil)
+        for _ in 0..<15 {
+            #expect(gimbalEncoder.encoder() != nil)
+        }
     }
 
     @Test("PilotingCommand.Encoder and GimbalControlCommandEncoder are thread-safe under concurrent access")

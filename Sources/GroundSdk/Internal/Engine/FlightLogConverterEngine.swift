@@ -83,11 +83,11 @@ class FlightLogConverterEngine: FlightLogEngineBase {
     func convertNextFlightLog() {
         // create directory to store the output GUTMA file & move to flight log storage
         do {
-            if !FileManager.default.fileExists(atPath: flightLogStorage.workDir.absoluteString) {
+            if !FileManager.default.fileExists(atPath: flightLogStorage.workDir.path) {
                 try FileManager.default.createDirectory(
                     at: flightLogStorage.workDir, withIntermediateDirectories: true, attributes: nil)
             }
-            if !FileManager.default.fileExists(atPath: gutmaLogStorage.workDir.absoluteString) {
+            if !FileManager.default.fileExists(atPath: gutmaLogStorage.workDir.path) {
                 try FileManager.default.createDirectory(
                     at: gutmaLogStorage.workDir, withIntermediateDirectories: true, attributes: nil)
             }

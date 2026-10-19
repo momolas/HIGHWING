@@ -264,9 +264,8 @@ class PilotingItfActivationController {
     ///
     /// - Parameter observer: observer to remove
     func removeObserver(observer: PilotingItfActivationControllerObserver) {
-        for i in 0..<observers.count {
-            observers.remove(at: i)
-            return
+        if let idx = observers.firstIndex(where: { $0 === observer }) {
+            observers.remove(at: idx)
         }
     }
 }

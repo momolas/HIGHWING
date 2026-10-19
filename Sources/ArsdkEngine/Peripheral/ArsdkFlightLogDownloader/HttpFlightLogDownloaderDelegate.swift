@@ -61,6 +61,9 @@ class HttpFlightLogDownloaderDelegate: ArsdkFlightLogDownloaderDelegate {
     /// Current download retry counter.
     private var retryCount = 0
 
+    /// Retry timer for failed downloads.
+    private var retryTimer: Timer?
+
     /// Whether or not the current overall task has been canceled.
     private var isCanceled = false
 
@@ -106,6 +109,8 @@ class HttpFlightLogDownloaderDelegate: ArsdkFlightLogDownloaderDelegate {
     }
 
     func reset() {
+        retryTimer?.invalidate()
+        retryTimer = nil
         flightLogApi = nil
     }
 
@@ -152,6 +157,8 @@ class HttpFlightLogDownloaderDelegate: ArsdkFlightLogDownloaderDelegate {
 
     func cancel() {
         isCanceled = true
+        retryTimer?.invalidate()
+        retryTimer = nil
         // empty the list of pending downloads
         pendingDownloads = []
         currentRequest?.cancel()
@@ -162,9 +169,13 @@ class HttpFlightLogDownloaderDelegate: ArsdkFlightLogDownloaderDelegate {
     private func queryFlightLogList() {
         currentRequest = flightLogApi?.getFlightLogList { flightLogList in
             if let flightLogList = flightLogList {
-                // Orders pending files by date and then by hasFlight.
-                self.pendingDownloads = flightLogList.sorted { $0.date < $1.date }
-                    .sorted { $0.hasFlight == true && $1.hasFlight != true }
+                // Orders pending files by hasFlight and then by date.
+                self.pendingDownloads = flightLogList.sorted {
+                    if ($0.hasFlight == true) != ($1.hasFlight == true) {
+                        return $0.hasFlight == true
+                    }
+                    return $0.date < $1.date
+                }
 
                 self.retryCount = 0
 
@@ -204,9 +215,9 @@ class HttpFlightLogDownloaderDelegate: ArsdkFlightLogDownloaderDelegate {
                         self.deleteFlightLogAndDownloadNext(flightLog: flightLog, fileUrl: fileUrl)
                     } else {
                         // even if the download failed, process next log
-                        if self.retryCount < 2 {
+                        if !self.isCanceled && self.retryCount < 2 {
                             self.retryCount += 1
-                            Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
+                            self.retryTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { _ in
                                 self.downloadNextLog()
                             }
                             return

@@ -553,10 +553,9 @@ class CameraPhotoSettingsCore: CameraPhotoSettings, CustomDebugStringConvertible
     /// - Parameter newGpslapseIntervalMin: new gpslapse interval min
     /// - Returns: true if the setting has been changed, false else
     func update(gpslapseIntervalMin newGpslapseIntervalMin: Double) -> Bool {
-        if updating || _gpslapseCaptureInterval != newGpslapseIntervalMin {
+        if _supportedGpslapseIntervals.lowerBound != newGpslapseIntervalMin {
             _supportedGpslapseIntervals = newGpslapseIntervalMin...Double.greatestFiniteMagnitude
             _gpslapseCaptureInterval = _supportedGpslapseIntervals.clamp(_gpslapseCaptureInterval)
-            timeout.cancel()
             return true
         }
         return false
@@ -567,11 +566,9 @@ class CameraPhotoSettingsCore: CameraPhotoSettings, CustomDebugStringConvertible
     /// - Parameter newTimelapseIntervalMin: new timelapse interval min
     /// - Returns: true if the setting has been changed, false else
     func update(timelapseIntervalMin newTimelapseIntervalMin: Double) -> Bool {
-        if updating || _timelapseCaptureInterval != newTimelapseIntervalMin {
+        if _supportedTimelapseIntervals.lowerBound != newTimelapseIntervalMin {
             _supportedTimelapseIntervals = newTimelapseIntervalMin...Double.greatestFiniteMagnitude
             _timelapseCaptureInterval = _supportedTimelapseIntervals.clamp(_timelapseCaptureInterval)
-
-            timeout.cancel()
             return true
         }
         return false

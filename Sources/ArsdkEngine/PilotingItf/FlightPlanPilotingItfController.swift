@@ -569,17 +569,13 @@ extension FlightPlanPilotingItfController: ArsdkFeatureFlightPlanCallback {
     func onCapabilities(supportedCapabilitiesBitField: UInt) {
         let startAtSupported = ArsdkFeatureFlightPlanSupportedCapabilitiesBitField
             .isSet(.startAt, inBitField: supportedCapabilitiesBitField)
-        flightPlanPilotingItf
-            .update(activateAtMissionItemSupported: startAtSupported)
-            .update(isUploadWithCustomIdSupported: startAtSupported)
-
         let startAtV2Supported = ArsdkFeatureFlightPlanSupportedCapabilitiesBitField
             .isSet(.startAtV2, inBitField: supportedCapabilitiesBitField)
         flightPlanPilotingItf
+            .update(activateAtMissionItemSupported: startAtSupported)
             .update(activateAtMissionItemV2Supported: startAtV2Supported)
-            .update(isUploadWithCustomIdSupported: startAtV2Supported)
-
-        flightPlanPilotingItf.notifyUpdated()
+            .update(isUploadWithCustomIdSupported: startAtSupported || startAtV2Supported)
+            .notifyUpdated()
     }
 
     func onWaypointSkipped(item: UInt) {

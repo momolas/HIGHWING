@@ -206,7 +206,7 @@ class SettingsStore {
     /// - Parameter key: value key
     /// - returns: true if the flag is present
     func readSupportedFlag(key: StoreKey) -> Bool {
-        return StorableValue<Bool>(from: dictionary[key.key]) != nil
+        return StorableValue<Bool>(from: dictionary[key.key])?.storableValue == true
     }
 
     /// Remove all content of this dictionary and remove it from its parent dictionary

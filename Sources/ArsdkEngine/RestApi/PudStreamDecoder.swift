@@ -214,9 +214,10 @@ class PudStreamDecoder: StreamDecoder {
                     state = state.nextState()
 
                 case .loopLines:
-                    while dataToProcess.count >= lineSize {
+                    var lineOffset = 0
+                    while dataToProcess.count - lineOffset >= lineSize {
                         // process \(lineSize) bytes in the buffer dataToProcess
-                        if let lineData = processALine() {
+                        if let lineData = processALine(at: lineOffset) {
                             // alloc a retData if none
                             if retData == nil {
                                 retData = Data(capacity: PudStreamDecoder.minimalBufferSize)
@@ -229,8 +230,11 @@ class PudStreamDecoder: StreamDecoder {
                             // write the line
                             retData!.append(lineData)
                         }
-                        // remove the proceed line (advance the buffer)
-                        dataToProcess.removeSubrange(0..<lineSize)
+                        lineOffset += lineSize
+                    }
+                    if lineOffset > 0 {
+                        // remove the processed lines (advance the buffer)
+                        dataToProcess.removeSubrange(0..<lineOffset)
                     }
                     // no more data (empty buffer or insufficent size)
                     stop = true
@@ -329,14 +333,17 @@ class PudStreamDecoder: StreamDecoder {
     /// - Note: The timestamp of each line is checked. In case of inconsistency the parsing is stopped and nil
     /// is returned
     ///
+    /// - Parameter lineOffset: byte offset of the line in `dataToProcess`
     /// - Returns: a JSON Data object corresponding to the decoded line, or nil in an error occurs
-    private func processALine () -> Data? {
+    private func processALine(at lineOffset: Int = 0) -> Data? {
         /// read buffer position
-        var indexInLine = 0
+        var indexInLine = lineOffset
         /// values collected from binary
         var values = [Any]()
         /// time read in the row
         var timeRead: Int?
+        /// flying state read in the row
+        var flyingStateRead: ArsdkFeatureArdrone3PilotingstateFlyingstatechangedState?
         /// computed speed
         var speedSquare = 0.0
 
@@ -367,8 +374,8 @@ class PudStreamDecoder: StreamDecoder {
                 timeRead = addValue as? Int ?? 0
 
             case "speed_vx", "speed_vy", "speed_vz":
-                let speed = addValue as? Double ?? 0.0
-                speedSquare += pow(speed, 2)
+                let speed = (addValue as? Double) ?? (addValue as? Float32).map(Double.init) ?? 0.0
+                speedSquare += speed * speed
 
             case "product_gps_available":
                 let available =  addValue as? Bool ?? false
@@ -402,25 +409,28 @@ class PudStreamDecoder: StreamDecoder {
 
             case "flying_state":
                 let intValue = addValue as? Int ?? -1
-                let flyingState: ArsdkFeatureArdrone3PilotingstateFlyingstatechangedState =
-                ArsdkFeatureArdrone3PilotingstateFlyingstatechangedState(rawValue: intValue) ?? .sdkCoreUnknown
-                switch flyingState {
-                case .landed:
-                    if let flightStartTime = flightStartTime, let timeRead = timeRead {
-                        flyingTime += timeRead - flightStartTime
-                        self.flightStartTime = nil
-                    }
-                case .takingoff, .hovering, .flying:
-                    if flightStartTime == nil, let timeRead = timeRead {
-                        flightStartTime = timeRead
-                    }
-                default:
-                    break
-                }
+                flyingStateRead =
+                    ArsdkFeatureArdrone3PilotingstateFlyingstatechangedState(rawValue: intValue) ?? .sdkCoreUnknown
             default:
                 break
             }
         } // end parsing all columns
+
+        if let flyingState = flyingStateRead {
+            switch flyingState {
+            case .landed:
+                if let flightStartTime = flightStartTime, let timeRead = timeRead {
+                    flyingTime += timeRead - flightStartTime
+                    self.flightStartTime = nil
+                }
+            case .takingoff, .hovering, .flying:
+                if flightStartTime == nil, let timeRead = timeRead {
+                    flightStartTime = timeRead
+                }
+            default:
+                break
+            }
+        }
 
         // update latest time
         if let timeRead = timeRead {
@@ -510,27 +520,17 @@ class PudStreamDecoder: StreamDecoder {
 extension Data {
 
     func getInt(at index: Int, size: Int ) -> Int {
-        switch size {
-        case 2:
-            let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.loadUnaligned(as: Int16.self)
+        return self.withUnsafeBytes { rawBuffer in
+            switch size {
+            case 2:
+                return Int(rawBuffer.loadUnaligned(fromByteOffset: index, as: Int16.self))
+            case 4:
+                return Int(rawBuffer.loadUnaligned(fromByteOffset: index, as: Int32.self))
+            case 8:
+                return Int(rawBuffer.loadUnaligned(fromByteOffset: index, as: Int64.self))
+            default: // 1
+                return Int(rawBuffer.loadUnaligned(fromByteOffset: index, as: Int8.self))
             }
-            return Int(ret)
-        case 4:
-            let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.loadUnaligned(as: Int32.self)
-            }
-            return Int(ret)
-        case 8:
-            let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.loadUnaligned(as: Int64.self)
-            }
-            return Int(ret)
-        default: // 1
-            let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.loadUnaligned(as: Int8.self)
-            }
-            return Int(ret)
         }
     }
 
@@ -540,12 +540,9 @@ extension Data {
     }
 
     func getFloat32(at index: Int) -> Float32 {
-        let retFloat: Float32
-
-        let ret = self.subdata(in: index ..< (index + 4)).withUnsafeBytes {
-            $0.loadUnaligned(as: Float32.self)
+        let retFloat = self.withUnsafeBytes {
+            $0.loadUnaligned(fromByteOffset: index, as: Float32.self)
         }
-        retFloat = ret
 
         if retFloat.isNaN || retFloat.isInfinite {
             return 0.0
@@ -554,12 +551,9 @@ extension Data {
     }
 
     func getFloat64(at index: Int) -> Float64 {
-        let retFloat: Float64
-
-        let ret = self.subdata(in: index ..< (index + 8)).withUnsafeBytes {
-            $0.loadUnaligned(as: Float64.self)
+        let retFloat = self.withUnsafeBytes {
+            $0.loadUnaligned(fromByteOffset: index, as: Float64.self)
         }
-        retFloat = ret
 
         if retFloat.isNaN || retFloat.isInfinite {
             return 0.0

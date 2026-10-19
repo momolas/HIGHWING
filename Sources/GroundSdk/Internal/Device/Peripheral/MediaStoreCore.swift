@@ -72,8 +72,10 @@ public class MediaResourceListCore: MediaResourceList {
         let resources: [MediaItemResourceCore]
         /// `true` if `resources` contains all resources of the media
         var allResourcesOfMedia: Bool {
-            return media.resources.filter {return resources.contains($0 as! MediaItemResourceCore)}.count
-                == media.resources.count
+            return media.resources.allSatisfy {
+                guard let resource = $0 as? MediaItemResourceCore else { return false }
+                return resources.contains(resource)
+            }
         }
     }
 
@@ -559,8 +561,10 @@ public class MediaDownloaderCore: MediaDownloader {
     ///    - signatureUrl: the signature url
     private func update(currentFileProgress: Float, status: MediaTaskStatus, currentMedia: MediaItem? = nil,
                         fileUrl: URL? = nil, signatureUrl: URL? = nil) {
-        let progress = (Float(resourcesIterator.currentSize - resourcesIterator.currentResourceSize) +
-            Float(resourcesIterator.currentResourceSize) * currentFileProgress) / Float(resourcesIterator.totalSize)
+        let progress = resourcesIterator.totalSize > 0
+            ? (Float(resourcesIterator.currentSize - resourcesIterator.currentResourceSize) +
+               Float(resourcesIterator.currentResourceSize) * currentFileProgress) / Float(resourcesIterator.totalSize)
+            : 1.0
         if self.currentMedia != currentMedia {
             self.currentMedia = currentMedia
             changed = true

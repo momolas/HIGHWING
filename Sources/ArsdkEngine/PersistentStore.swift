@@ -189,7 +189,9 @@ class PersistentDictionary {
     ///
     /// - Parameter other: the content to merge.
     func merge(_ other: [String: AnyObject]) {
-        content?.merge(other) { (_, new) in new }
+        for (k, v) in other {
+            doUpdate(v, forKey: k)
+        }
     }
 
     /// Get all Keys if dictionary exists
@@ -212,7 +214,10 @@ class PersistentDictionary {
     }
 
     func reload() {
-        parent?.reload()
+        if let parent = parent {
+            parent.reload()
+            content = parent.content?[key] as? [String: AnyObject]
+        }
     }
 
     /// Commit all modification made in the dictionary tree
@@ -317,17 +322,6 @@ private class RootPersistentDictionaryRef: Hashable {
 
     init(dictionary: RootPersistentDictionary) {
         self.dictionary = dictionary
-    }
-}
-
-private func != <T: Equatable>(lhs: [T]?, rhs: [T]?) -> Bool {
-    switch (lhs, rhs) {
-    case (.some(let lhs), .some(let rhs)):
-        return lhs != rhs
-    case (.none, .none):
-        return false
-    default:
-        return true
     }
 }
 

@@ -85,7 +85,7 @@ class CameraZoomCore: CameraZoom {
     /// Range of the level.
     /// Express that the level can go from 1.0 to `maxLossyLevel`
     private var levelRange: ClosedRange<Double> {
-        return 1.0...maxLossyLevel
+        return 1.0...Swift.max(1.0, maxLossyLevel)
     }
 
     /// Constructor

@@ -131,9 +131,9 @@ class AnafiGeofence: DeviceComponentController, GeofenceBackend {
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.mode,
             setting: geofence.mode as! EnumSettingCore,
-            notifyComponent: { self.geofence.notifyUpdated() },
-            markChanged: { self.geofence.markChanged() },
-            sendCommand: { mode in
+            notifyComponent: { [unowned self] in self.geofence.notifyUpdated() },
+            markChanged: { [unowned self] in self.geofence.markChanged() },
+            sendCommand: { [unowned self] mode in
                 return self.sendModeCommand(mode)
             })
 
@@ -141,9 +141,9 @@ class AnafiGeofence: DeviceComponentController, GeofenceBackend {
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.maxAltitude,
             setting: geofence.maxAltitude as! DoubleSettingCore,
-            notifyComponent: { self.geofence.notifyUpdated() },
-            markChanged: { self.geofence.markChanged() },
-            sendCommand: { maxAltitude in
+            notifyComponent: { [unowned self] in self.geofence.notifyUpdated() },
+            markChanged: { [unowned self] in self.geofence.markChanged() },
+            sendCommand: { [unowned self] maxAltitude in
                 return self.sendMaxAltitudeCommand(maxAltitude)
             }
         )
@@ -152,9 +152,9 @@ class AnafiGeofence: DeviceComponentController, GeofenceBackend {
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.maxDistance,
             setting: geofence.maxDistance as! DoubleSettingCore,
-            notifyComponent: { self.geofence.notifyUpdated() },
-            markChanged: { self.geofence.markChanged() },
-            sendCommand: { maxDistance in
+            notifyComponent: { [unowned self] in self.geofence.notifyUpdated() },
+            markChanged: { [unowned self] in self.geofence.markChanged() },
+            sendCommand: { [unowned self] maxDistance in
                 return self.sendMaxDistanceCommand(maxDistance)
             }
         )

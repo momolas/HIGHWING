@@ -340,6 +340,8 @@ fileprivate extension Plan.Config {
                     Camera2RecordingResolution.arsdkMapper.reverseMap(from:)),
                   frameRate: config.frameRate.flatMap(
                     Camera2RecordingFramerate.arsdkMapper.reverseMap(from:)),
+                  thermalControlMode: config.thermalControlMode.flatMap(
+                    ThermalControlMode.arsdkMapper.reverseMap(from:)),
                   radioConfiguration: config.enabledLinks.flatMap(
                     RadioConfiguration.arsdkMapper.reverseMap(from:))
         )

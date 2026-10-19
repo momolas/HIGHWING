@@ -937,54 +937,6 @@ extension AnimFeaturePilotingItfController: ArsdkFeatureAnimationCallback {
     }
 }
 
-/// Extension of AnimationType that converts ArsdkFeatureAnimationType into AnimationType
-extension AnimationType {
-    /// Translate an `ArsdkFeatureAnimationType` into an `AnimationType`.
-    ///
-    /// - Parameter arsdkAnimationType: arsdk animation type
-    /// - Returns: the corresponding animation type if found, nil otherwise
-    private static func from(_ arsdkAnimationType: ArsdkFeatureAnimationType) -> AnimationType? {
-        switch arsdkAnimationType {
-        case .candle:
-            return .candle
-        case .dollySlide:
-            return .dollySlide
-        case .dronie:
-            return .dronie
-        case .flip:
-            return .flip
-        case .horizontalPanorama:
-            return .horizontalPanorama
-        case .horizontalReveal:
-            return .horizontalReveal
-        case .parabola:
-            return .parabola
-        case .spiral:
-            return .spiral
-        case .verticalReveal:
-            return .verticalReveal
-        case .vertigo:
-            return .vertigo
-        case .twistUp:
-            return .twistUp
-        case .positionTwistUp:
-            return .positionTwistUp
-        case .horizontal180PhotoPanorama:
-            return .horizontal180PhotoPanorama
-        case .vertical180PhotoPanorama:
-            return .vertical180PhotoPanorama
-        case .sphericalPhotoPanorama:
-            return .sphericalPhotoPanorama
-        case .superWidePhotoPanorama:
-            return .superWidePhotoPanorama
-        case .sdkCoreUnknown,
-                .none:
-            fallthrough
-        @unknown default:
-            return nil
-        }
-    }
-}
 
 /// Extension of AnimationStatus that converts ArsdkFeatureAnimationState into AnimationStatus
 extension AnimationStatus {
@@ -1113,6 +1065,7 @@ extension AnimationType: ArsdkMappableEnum {
         .horizontalPanorama: .horizontalPanorama,
         .horizontalReveal: .horizontalReveal,
         .parabola: .parabola,
+        .spiral: .spiral,
         .verticalReveal: .verticalReveal,
         .vertigo: .vertigo,
         .twistUp: .twistUp,

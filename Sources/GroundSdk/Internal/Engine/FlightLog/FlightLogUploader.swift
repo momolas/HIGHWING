@@ -113,8 +113,10 @@ class FlightLogUploader {
     ///   - completionCallback: closure that will be called when the upload completes.
     func getUploadUrlFromServer(baseUrl: URL, api: String, flightLogUrl: URL, token: String, sha256: String,
         completionCallback: @escaping CompletionCallback) -> CancelableCore {
-        return cloudServer.getData(baseUrl: baseUrl, api: api, token: token, query: ["sha256": sha256], anonymous: true,
-            requestCustomization: { $0.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")},
+        let task = CancelableTaskCore()
+        task.request = cloudServer.getData(baseUrl: baseUrl, api: api, token: token, query: ["sha256": sha256],
+            anonymous: true, requestCustomization: { $0.setValue("Bearer \(token)",
+                forHTTPHeaderField: "Authorization")},
             completion: { result, data in
             /// get url from json data
             var uploadError: UploadError?
@@ -126,10 +128,16 @@ class FlightLogUploader {
                 let arrayJson = self.convertToDictionary(string: stringJson),
                 let baseString = arrayJson["upload_url"] as? String,
                 let baseUrl = URL(string: baseString) {
-                    _ = self.sendFileToServer(baseUrl: baseUrl,
-                        api: "", flightLogUrl: flightLogUrl, method: .put,
-                        anonymous: true,
-                        completionCallback: completionCallback)
+                    if !task.canceled {
+                        task.request = self.sendFileToServer(baseUrl: baseUrl,
+                            api: "", flightLogUrl: flightLogUrl, method: .put,
+                            anonymous: true,
+                            completionCallback: completionCallback)
+                    } else {
+                        uploadError = .canceled
+                    }
+                } else {
+                    uploadError = .serverError
                 }
             case .httpError(let errorCode):
                 switch errorCode {
@@ -160,6 +168,7 @@ class FlightLogUploader {
                 completionCallback(flightLogUrl, uploadError)
             }
         })
+        return task
     }
 
     /// Upload a flightLog report on chosen server.

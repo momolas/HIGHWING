@@ -414,7 +414,9 @@ extension HttpSessionCore: URLSessionDelegate, URLSessionDataDelegate, URLSessio
                 ULog.e(.httpClientTag, "Progress callback not found for task \(task.taskIdentifier)")
                 return
             }
-            let progress = Int((Double(totalBytesSent) / Double(totalBytesExpectedToSend)) * 100)
+            let progress = totalBytesExpectedToSend > 0
+                ? Int((Double(totalBytesSent) / Double(totalBytesExpectedToSend)) * 100)
+                : 0
             ULog.d(.httpClientTag, "Upload progress of task \(task.taskIdentifier): \(progress)")
             progressCb(progress)
         }
@@ -505,54 +507,78 @@ extension HttpSessionCore: URLSessionDownloadDelegate {
     public func urlSession(_ session: URLSession,
                            downloadTask: URLSessionDownloadTask,
                            didFinishDownloadingTo location: URL) {
+        var result: Result
+        if let response = downloadTask.response as? HTTPURLResponse {
+            if response.isSuccessful() {
+                result = .success(response.statusCode)
+            } else {
+                result = .httpError(response.statusCode)
+            }
+        } else {
+            result = .httpError(403)
+        }
+
+        // Move downloaded temporary file to a safe staging URL before URLSession deletes `location`
+        // when this delegate method returns.
+        var stagedUrl: URL?
+        var moveError: Error?
+        if case .success = result {
+            let tempCopy = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+            do {
+                try FileManager.default.moveItem(at: location, to: tempCopy)
+                stagedUrl = tempCopy
+            } catch {
+                moveError = error
+            }
+        }
+
         // as we are in the delegateQueue, executes the call back in main thread
-        DispatchQueue.main.sync {
+        DispatchQueue.main.async {
             guard let completionCb = self.dlCompletionCbs[downloadTask.taskIdentifier] else {
+                if let stagedUrl = stagedUrl {
+                    try? FileManager.default.removeItem(at: stagedUrl)
+                }
                 ULog.e(.httpClientTag, "Completion callback not found for task \(downloadTask.taskIdentifier)")
                 return
             }
 
-            var result: Result
-            if let response = downloadTask.response as? HTTPURLResponse {
-                if response.isSuccessful() {
-                    result = .success(response.statusCode)
-                } else {
-                    result = .httpError(response.statusCode)
-                }
-            } else {
-                result = .httpError(403)
-            }
-
+            var finalResult = result
             var localFileUrlUsed: URL?
 
-            if case .success = result {
-                let localFileUrl = completionCb.destination
-                if FileManager.default.fileExists(atPath: localFileUrl.path) {
+            if case .success = finalResult {
+                if let moveError = moveError {
+                    finalResult = .error(moveError)
+                } else if let stagedUrl = stagedUrl {
+                    let localFileUrl = completionCb.destination
+                    if FileManager.default.fileExists(atPath: localFileUrl.path) {
+                        do {
+                            try FileManager.default.removeItem(atPath: localFileUrl.path)
+                        } catch let error {
+                            ULog.w(.httpClientTag, "Failed to remove file at \(localFileUrl): " +
+                                   error.localizedDescription)
+                        }
+                    }
                     do {
-                        try FileManager.default.removeItem(atPath: localFileUrl.path)
+                        try FileManager.default.createDirectory(
+                            at: localFileUrl.deletingLastPathComponent(), withIntermediateDirectories: true,
+                            attributes: nil)
+                        try FileManager.default.moveItem(at: stagedUrl, to: localFileUrl)
+                        localFileUrlUsed = localFileUrl
                     } catch let error {
-                        ULog.w(.httpClientTag, "Failed to remove file at \(localFileUrl): " +
+                        try? FileManager.default.removeItem(at: stagedUrl)
+                        finalResult = .error(error)
+                        ULog.w(.httpClientTag, "Failed to move file at \(localFileUrl): " +
                                error.localizedDescription)
                     }
-                }
-                do {
-                    try FileManager.default.createDirectory(
-                        at: localFileUrl.deletingLastPathComponent(), withIntermediateDirectories: true,
-                        attributes: nil)
-                    try FileManager.default.moveItem(at: location, to: localFileUrl)
-                    localFileUrlUsed = localFileUrl
-                } catch let error {
-                    result = .error(error)
-                    ULog.w(.httpClientTag, "Failed to move file at \(localFileUrl): " +
-                           error.localizedDescription)
                 }
             }
             self.progressCbs[downloadTask.taskIdentifier] = nil
             self.dlCompletionCbs[downloadTask.taskIdentifier] = nil
 
             ULog.d(.httpClientTag, "Task \(downloadTask.taskIdentifier) " +
-                   "(\(downloadTask.currentRequest?.url?.description ?? "")) did complete with result: \(result)")
-            completionCb.callback(result, localFileUrlUsed)
+                   "(\(downloadTask.currentRequest?.url?.description ?? "")) did complete with result: \(finalResult)")
+            completionCb.callback(finalResult, localFileUrlUsed)
         }
     }
 
@@ -567,6 +593,9 @@ extension HttpSessionCore: URLSessionDownloadDelegate {
                 return
             }
 
+            guard totalBytesExpectedToWrite > 0 else {
+                return
+            }
             let progress = Int((Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)) * 100)
             progressCb(progress)
         }

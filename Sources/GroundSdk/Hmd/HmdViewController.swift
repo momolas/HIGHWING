@@ -379,8 +379,7 @@ open class HmdViewController: UIViewController {
             return false
         }
         // show the overlay layer only if sprites are enabled
-        let enabledSprites = spritesForCamera.filter { $0.enable }
-        if enabledSprites.count > 0 {
+        if spritesForCamera.contains(where: { $0.enable }) {
             multiLayer?.hide(layerId: overCameraLayerId, false)
             return true
         } else {
@@ -398,8 +397,7 @@ open class HmdViewController: UIViewController {
             return false
         }
         // show the overlay layer only if sprites are enabled
-        let enabledSprites = spritesForStream.filter { $0.enable }
-        if enabledSprites.count > 0 {
+        if spritesForStream.contains(where: { $0.enable }) {
             multiLayer?.hide(layerId: overStreamLayerId, false)
             return true
         } else {

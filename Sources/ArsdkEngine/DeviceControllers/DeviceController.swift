@@ -390,6 +390,12 @@ class DeviceController: NSObject {
     /// API Capabilities.
     private var apiCapabilities = ArsdkApiCapabilities.unknown
 
+    /// Decoder for logsync commands.
+    private lazy var logsyncCommandDecoder = ArsdkLogsyncCommandDecoder(listener: self)
+
+    /// Decoder for logsync events.
+    private lazy var logsyncEventDecoder = ArsdkLogsyncEventDecoder(listener: self)
+
     /// Description.
     override var description: String {
         return "\(String(describing: type(of: self))) [uid: \(device.uid), model: \(device.deviceModel)]"
@@ -886,10 +892,8 @@ class DeviceController: NSObject {
     /// - Parameter command: received command
     func protocolDidReceiveCommand(_ command: OpaquePointer) {
         if ArsdkCommand.getFeatureId(command) == kArsdkFeatureGenericUid {
-            let cmdDec = ArsdkLogsyncCommandDecoder(listener: self)
-            let evtDec = ArsdkLogsyncEventDecoder(listener: self)
-            ArsdkFeatureGeneric.decode(command, callback: cmdDec)
-            ArsdkFeatureGeneric.decode(command, callback: evtDec)
+            ArsdkFeatureGeneric.decode(command, callback: logsyncCommandDecoder)
+            ArsdkFeatureGeneric.decode(command, callback: logsyncEventDecoder)
         }
         blackBoxSession?.onCommandReceived(command)
         deviceEventLogger?.onCommandReceived(command: command)

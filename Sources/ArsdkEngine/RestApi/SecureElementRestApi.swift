@@ -91,6 +91,8 @@ class SecureElementRestApi {
                 if let data = data {
                     let tokenString = String(data: data, encoding: .utf8)
                     completion(tokenString)
+                } else {
+                    completion(nil)
                 }
             default:
                 completion(nil)

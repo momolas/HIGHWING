@@ -111,8 +111,9 @@ class FlightCameraRecordUploader {
     ///   - completionCallback: closure that will be called when the upload completes.
     func getUploadUrlFromServer(baseUrl: URL, api: String, flightCameraRecord: FlightCameraRecordFile, token: String,
         completionCallback: @escaping CompletionCallback) -> CancelableCore {
-        return cloudServer.sendFile(baseUrl: baseUrl, api: api, fileUrl: flightCameraRecord.jsonFile, method: .post,
-            anonymous: false, requestCustomization: { $0.setValue("Bearer \(token)",
+        let task = CancelableTaskCore()
+        task.request = cloudServer.sendFile(baseUrl: baseUrl, api: api, fileUrl: flightCameraRecord.jsonFile,
+            method: .post, anonymous: false, requestCustomization: { $0.setValue("Bearer \(token)",
                 forHTTPHeaderField: "Authorization")}, progress: { _ in }, completion: { result, data in
 
             /// get url from json data
@@ -125,10 +126,16 @@ class FlightCameraRecordUploader {
                 let arrayJson = self.convertToDictionary(string: stringJson),
                 let baseString = arrayJson["upload_url"] as? String,
                 let baseUrl = URL(string: baseString) {
-                    _ = self.sendFileToServer(baseUrl: baseUrl,
-                        api: "", flightCameraRecord: flightCameraRecord, method: .put,
-                        anonymous: true,
-                        completionCallback: completionCallback)
+                    if !task.canceled {
+                        task.request = self.sendFileToServer(baseUrl: baseUrl,
+                            api: "", flightCameraRecord: flightCameraRecord, method: .put,
+                            anonymous: true,
+                            completionCallback: completionCallback)
+                    } else {
+                        uploadError = .canceled
+                    }
+                } else {
+                    uploadError = .serverError
                 }
             case .httpError(let errorCode):
                 switch errorCode {
@@ -159,6 +166,7 @@ class FlightCameraRecordUploader {
                 completionCallback(flightCameraRecord, uploadError)
             }
         })
+        return task
     }
 
     /// Upload a flightCameraRecord report on chosen server.

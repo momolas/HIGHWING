@@ -347,8 +347,7 @@ class SystemPositionCoreImpl: SystemPositionCore {
             // check if the suspend sate is requested (set true or false in the stopped indicator)
             suspended = (suspendUpdatingCount > 0)
             // if the location is not suspended and existing subscribers for updates, we need continuous updates
-            let subscribersForUpdatesCount = locationMonitors.filter { $0.passive == false }.count
-            needsLocationUpdates = !suspended && subscribersForUpdatesCount > 0
+            needsLocationUpdates = !suspended && locationMonitors.contains(where: { !$0.passive })
         }
 
         if needsLocationUpdates {

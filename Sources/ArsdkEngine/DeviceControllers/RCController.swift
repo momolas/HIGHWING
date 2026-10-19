@@ -282,6 +282,8 @@ class RCController: DeviceController {
             ArsdkFeatureSkyctrlSettingsstate.decode(command, callback: self)
         case kArsdkFeatureSkyctrlCommonstateUid:
             ArsdkFeatureSkyctrlCommonstate.decode(command, callback: self)
+        case kArsdkFeatureSkyctrlCommoneventstateUid:
+            ArsdkFeatureSkyctrlCommoneventstate.decode(command, callback: self)
         case kArsdkFeatureGenericUid:
             remoteAntenna.arsdkDecoder.decode(command)
             arsdkMobileDeviceDecoder.decode(command)
@@ -374,7 +376,6 @@ class RCController: DeviceController {
             let courseRad = newLocation.course.toRadians()
             location.northVelocity = Google_Protobuf_FloatValue(Float(cos(courseRad) * newLocation.speed))
             location.eastVelocity = Google_Protobuf_FloatValue(Float(sin(courseRad) * newLocation.speed))
-            location.velocityAccuracy = Google_Protobuf_FloatValue(Float(newLocation.speedAccuracy))
             location.velocityAccuracy = Google_Protobuf_FloatValue(Float(newLocation.speedAccuracy))
         }
         _ = sendMobileDeviceCommand(.location(location))

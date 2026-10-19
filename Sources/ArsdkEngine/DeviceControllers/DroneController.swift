@@ -285,7 +285,6 @@ class DroneController: DeviceController {
     ///
     /// - Parameter command: received command
     override func protocolDidReceiveCommand(_ command: OpaquePointer) {
-        deviceEventLogger?.onCommandReceived(command: command)
         switch ArsdkCommand.getFeatureId(command) {
         case kArsdkFeatureCommonSettingsstateUid:
             ArsdkFeatureCommonSettingsstate.decode(command, callback: self)

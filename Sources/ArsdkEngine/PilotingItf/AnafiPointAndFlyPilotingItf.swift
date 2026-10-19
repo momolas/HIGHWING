@@ -227,7 +227,7 @@ extension AnafiPointAndFlyPilotingItf: ArsdkPointnflyEventDecoderListener {
                                                             yawRotationSpeed: fly.maxYawRotationSpeed, heading: heading,
                                                             enabledLinks: pointAndFlyPilotingItf.availableRadioLinks
                                 .contains(fly.enabledLinks.gsdk) ? fly.enabledLinks.gsdk :
-                                                                pointAndFlyPilotingItf.availableRadioLinks.first!)
+                                                                (pointAndFlyPilotingItf.availableRadioLinks.first ?? fly.enabledLinks.gsdk))
 
                             pointAndFlyPilotingItf.update(unavailabilityReasons: [])
                                 .update(currentDirective: flyDirective)

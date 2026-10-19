@@ -473,7 +473,9 @@ extension ArsdkMediaStore: MediaStoreBackend {
         ///   - ratio: current file upload between 0.0 (0%) and 1.0 (100%)
         ///   - status: upload progress status
         func notifyProgress(currentEntry: Entry?, ratio: Float, status: MediaTaskStatus) {
-            let totalProgress = (Float(uploadedResourceSize) + Float(currentEntry?.size ?? 0) * ratio) / totalSize
+            let totalProgress = totalSize > 0
+                ? (Float(uploadedResourceSize) + Float(currentEntry?.size ?? 0) * ratio) / totalSize
+                : 0.0
             progress(ResourceUploaderCore(targetMedia: target, totalResourceCount: entries.count,
                                           uploadedResourceCount: uploadedResourceCount, currentFileProgress: ratio,
                                           totalProgress: totalProgress, status: status,

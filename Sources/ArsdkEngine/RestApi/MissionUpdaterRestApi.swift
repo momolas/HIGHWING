@@ -66,7 +66,7 @@ class MissionUpdaterRestApi {
 
                             let missionList = try decoder.decode([MissionDecodable].self, from: data)
                             // transform the json object missions list into a `MissionCore` list
-                            let missions = missionList.map { MissionCore.from(httpMission: $0) }.compactMap { $0 }
+                            let missions = missionList.compactMap { MissionCore.from(httpMission: $0) }
                             var finalMissions: [String: MissionCore] = [:]
                             for mission in missions {
                                 finalMissions[mission.uid] = mission
@@ -78,6 +78,8 @@ class MissionUpdaterRestApi {
                                    error.localizedDescription)
                             completion([:])
                         }
+                    } else {
+                        completion([:])
                     }
                 default:
                     completion([:])
@@ -109,6 +111,8 @@ class MissionUpdaterRestApi {
                                error.localizedDescription)
                         completion(nil)
                     }
+                } else {
+                    completion(nil)
                 }
             default:
                 completion(nil)

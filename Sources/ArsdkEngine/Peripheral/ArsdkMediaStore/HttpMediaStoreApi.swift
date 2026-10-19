@@ -56,7 +56,7 @@ class HttpMediaStoreApi: NSObject, MediaStoreApi {
         if let droneServer = deviceController.deviceServer {
             mediaWsApi = MediaWsApi(server: droneServer) { [unowned self] event in
                 self.delegate?.receivedMediaStoreChangedEvent(event)
-            } onFailure: {
+            } onFailure: { [unowned self] in
                 self.delegate?.receivedMediaStoreChangedEvent(.webSocketDisconnected)
             }
         }

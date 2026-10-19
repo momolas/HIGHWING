@@ -265,10 +265,10 @@ class CameraFeatureCameraRouter: DeviceComponentController {
             switch mode {
             case .none:
                 requestedExposureLockMode = mode
-                return router.sendCommand(ArsdkFeatureCamera.unlockExposureEncoder(camId: 0))
+                return router.sendCommand(ArsdkFeatureCamera.unlockExposureEncoder(camId: cameraId))
             case .currentValues:
                 requestedExposureLockMode = mode
-                return router.sendCommand(ArsdkFeatureCamera.lockExposureEncoder(camId: 0))
+                return router.sendCommand(ArsdkFeatureCamera.lockExposureEncoder(camId: cameraId))
             case .region(let centerX, let centerY, _, _):
                 // save the requested mode in float, in order to avoid precision errors when we test the drone response
                 let centerXFromFloat = Double(Float(centerX))
@@ -276,7 +276,7 @@ class CameraFeatureCameraRouter: DeviceComponentController {
                 requestedExposureLockMode = CameraExposureLockMode.region(
                     centerX: centerXFromFloat, centerY: centerYFromFloat, width: 0.0, height: 0.0)
                 return router.sendCommand(ArsdkFeatureCamera.lockExposureOnRoiEncoder(
-                    camId: 0, roiCenterX: Float(centerX), roiCenterY: Float(centerY)))
+                    camId: cameraId, roiCenterX: Float(centerX), roiCenterY: Float(centerY)))
             }
         }
 
@@ -635,12 +635,16 @@ extension CameraFeatureCameraRouter: ArsdkFeatureCameraCallback {
                 CameraIso.createSetFrom(bitField: maxIsoSensitivitiesCapabilitiesBitField)))
 
             let _meteringMode = CameraAutoExposureMeteringMode(fromArsdk: meteringMode)
+            if let _meteringMode = _meteringMode {
+                cameraController.camera.update(autoExposureMeteringMode: _meteringMode)
+            }
 
-            cameraController.settingDidChange(.exposure(mode: _mode,
-                                                        manualShutterSpeed: _manualShutterSpeed!,
-                                                        manualIsoSensitivity: _manualIsoSensitivity!,
-                                                        maximumIsoSensitivity: _maxIsoSensitivity!,
-                                                        autoExposureMeteringMode: _meteringMode!))
+            cameraController.settingDidChange(.exposure(
+                mode: _mode,
+                manualShutterSpeed: _manualShutterSpeed ?? cameraController.camera.exposureSettings.manualShutterSpeed,
+                manualIsoSensitivity: _manualIsoSensitivity ?? cameraController.camera.exposureSettings.manualIsoSensitivity,
+                maximumIsoSensitivity: _maxIsoSensitivity ?? cameraController.camera.exposureSettings.maximumIsoSensitivity,
+                autoExposureMeteringMode: _meteringMode ?? cameraController.camera.exposureSettings.autoExposureMeteringMode))
             self.cameraControllers[camId] = cameraController
 
         } else {

@@ -94,28 +94,9 @@ extension AnimationPilotingItfCore {
     /// - Note: Changes are not notified until notifyUpdated() is called.
     @discardableResult public func update(supportedAnimations newSet: [PilotingMode: Set<AnimationType>])
         -> AnimationPilotingItfCore {
-        if supportedAnimations == nil {
+        if supportedAnimations != newSet {
             supportedAnimations = newSet
             markChanged()
-        } else if newSet.isEmpty && !supportedAnimations!.isEmpty {
-            supportedAnimations = newSet
-            markChanged()
-        } else {
-            for mode in newSet.keys {
-                let new = newSet[mode]
-                if let old = self.supportedAnimations![mode] {
-                    if old != new {
-                        supportedAnimations = newSet
-                        markChanged()
-                        return self
-                    }
-                } else {
-                    supportedAnimations = newSet
-                    markChanged()
-                    return self
-                }
-            }
-
         }
         return self
     }
@@ -127,27 +108,9 @@ extension AnimationPilotingItfCore {
     /// - Note: Changes are not notified until notifyUpdated() is called.
     @discardableResult public func update(issueForAnimationType newSet: [AnimationType: Set<AnimationIssue>])
         -> AnimationPilotingItfCore {
-        if availabilityIssues == nil {
+        if availabilityIssues != newSet {
             availabilityIssues = newSet
             markChanged()
-        } else if newSet.isEmpty && !availabilityIssues!.isEmpty {
-            availabilityIssues = newSet
-            markChanged()
-        } else {
-            for animationType in newSet.keys {
-                let new = newSet[animationType]
-                if let old = self.availabilityIssues![animationType] {
-                    if old != new {
-                        availabilityIssues = newSet
-                        markChanged()
-                        return self
-                    }
-                } else {
-                    availabilityIssues = newSet
-                    markChanged()
-                    return self
-                }
-            }
         }
         return self
     }

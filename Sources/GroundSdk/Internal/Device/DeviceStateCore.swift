@@ -192,7 +192,7 @@ public class DeviceStateCore: DeviceState {
             self._shutDownDate = nil
         } else {
             // Shutdown is planned
-            self._shutDownDate = Date(timeIntervalSinceNow: TimeInterval(milliseconds/1000))
+            self._shutDownDate = Date(timeIntervalSinceNow: TimeInterval(milliseconds) / 1000.0)
         }
         return self
     }

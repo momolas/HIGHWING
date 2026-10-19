@@ -75,7 +75,10 @@ class DtedRestApi {
                 switch result {
                 case .success:
                     // listing files is successful
-                    guard let data = data else { return }
+                    guard let data = data else {
+                        completion(nil)
+                        return
+                    }
                     let decoder = JSONDecoder()
                     // need to override the way date are parsed because default format is iso8601 extended
                     decoder.dateDecodingStrategy = .formatted(.iso8601Base)
@@ -84,7 +87,7 @@ class DtedRestApi {
                         let throwables = try decoder.decode([Throwable<File>].self, from: data)
                         let fileList = throwables.compactMap { try? $0.result.get() }
                         // transform the json object dted file list into a `DtedFileCore` list
-                        let files = fileList.map { DtedFileCore.from(httpFile: $0) }.compactMap { $0 }
+                        let files = fileList.compactMap { DtedFileCore.from(httpFile: $0) }
                         completion(files)
                     } catch let error {
                         ULog.w(.dtedTag, "Failed to decode data \(String(data: data, encoding: .utf8) ?? ""): " +
@@ -112,7 +115,10 @@ class DtedRestApi {
                 switch result {
                 case .success:
                     // listing files is successful
-                    guard let data = data else { return }
+                    guard let data = data else {
+                        completion(nil)
+                        return
+                    }
                     let decoder = JSONDecoder()
                     // need to override the way date are parsed because default format is iso8601 extended
                     decoder.dateDecodingStrategy = .formatted(.iso8601Base)
@@ -200,45 +206,6 @@ class DtedRestApi {
         let latitudeSpacing: Double
         let longitudeSpacing: Double
         let elevation: Double?
-
-        /// Custom initializer which allows to safely decode the resource array, ignoring the ones that could not be
-        /// decoded and keeping the others.
-        ///
-        /// - Parameter decoder: the decoder to read data from
-        init(from decoder: Decoder) throws {
-            let values = try decoder.container(keyedBy: CodingKeys.self)
-            filename = try values.decode(String.self, forKey: .filename)
-            date = try values.decode(Date.self, forKey: .date)
-            md5 = try values.decode(String.self, forKey: .md5)
-            valid = try values.decode(Bool.self, forKey: .valid)
-            latitudeSw = try values.decode(Int.self, forKey: .latitudeSw)
-            longitudeSw = try values.decode(Int.self, forKey: .longitudeSw)
-            latitudeSpacing = try values.decode(Double.self, forKey: .latitudeSpacing)
-            longitudeSpacing = try values.decode(Double.self, forKey: .longitudeSpacing)
-            elevation = try values.decodeIfPresent(Double.self, forKey: .elevation)
-        }
-    }
-
-    /// Origin as described by the REST api.
-    internal struct Origin: Decodable {
-        enum CodingKeys: String, CodingKey {
-            case latitude
-            case longitude
-        }
-
-        let latitude: Double
-        let longitude: Double
-    }
-
-    /// GridResolution as described by the REST api.
-    internal struct GridResolution: Decodable {
-        enum CodingKeys: String, CodingKey {
-            case latitudeSpacing
-            case longitudeSpacing
-        }
-
-        let latitudeSpacing: Double
-        let longitudeSpacing: Double
     }
 }
 

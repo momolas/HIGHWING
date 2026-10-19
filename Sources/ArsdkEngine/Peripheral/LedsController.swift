@@ -178,11 +178,11 @@ class LedsController: DeviceComponentController, LedsBackend {
             standardSetting = OfflineBoolSetting(
                 presetDict: presetStore, presetEntry: SettingKey.stateKey,
                 setting: leds.standard as! BoolSettingCore,
-                notifyComponent: {
+                notifyComponent: { [unowned self] in
                     self.leds.notifyUpdated()
-                }, markChanged: {
+                }, markChanged: { [unowned self] in
                     self.leds.markChanged()
-                }, sendCommand: { enabled in
+                }, sendCommand: { [unowned self] enabled in
                     self.sendStandardCommand(enabled)
                 })
             settings.append(standardSetting!)
@@ -194,11 +194,11 @@ class LedsController: DeviceComponentController, LedsBackend {
             infraredSetting = OfflineBoolSetting(
                 presetDict: presetStore, presetEntry: SettingKey.infraredKey,
                 setting: leds.infrared as! BoolSettingCore,
-                notifyComponent: {
+                notifyComponent: { [unowned self] in
                     self.leds.notifyUpdated()
-                }, markChanged: {
+                }, markChanged: { [unowned self] in
                     self.leds.markChanged()
-                }, sendCommand: { enabled in
+                }, sendCommand: { [unowned self] enabled in
                     self.sendInfraredCommand(enabled)
                 })
             settings.append(infraredSetting!)
@@ -210,11 +210,11 @@ class LedsController: DeviceComponentController, LedsBackend {
             tofSetting = OfflineBoolSetting(
                 presetDict: presetStore, presetEntry: SettingKey.tofKey,
                 setting: leds.tof as! BoolSettingCore,
-                notifyComponent: {
+                notifyComponent: { [unowned self] in
                     self.leds.notifyUpdated()
-                }, markChanged: {
+                }, markChanged: { [unowned self] in
                     self.leds.markChanged()
-                }, sendCommand: { enabled in
+                }, sendCommand: { [unowned self] enabled in
                     self.sendSwitchCommand(type: .tof, enabled: enabled)
                 })
             settings.append(tofSetting!)

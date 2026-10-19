@@ -142,14 +142,14 @@ extension MavlinkStandard {
                 .invalidParameter("Parameter 1 (mode) was out of range.")
             }
             let waypointIndex = Int(parameters[1])
-            guard 0 <= waypointIndex, waypointIndex <= 255 else {
+            guard 0 <= waypointIndex else {
                 throw MavlinkStandard.MavlinkCommand.ParseError
-                .invalidParameter("Parameter 2 (waypointIndex) was out of range [0,255].")
+                .invalidParameter("Parameter 2 (waypointIndex) was out of range [0,).")
             }
             let roiIndex = Int(parameters[2])
-            guard 0 <= roiIndex else {
+            guard 0 <= roiIndex, roiIndex <= 255 else {
                 throw MavlinkStandard.MavlinkCommand.ParseError
-                .invalidParameter("Parameter 3 (roiIndex) was out of range [0,).")
+                .invalidParameter("Parameter 3 (roiIndex) was out of range [0,255].")
             }
             let pitchOrLatitude = parameters[4]
             let rollOrLongitude = parameters[5]

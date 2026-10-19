@@ -205,23 +205,23 @@ class NetworkController: DeviceComponentController, NetworkControlBackend {
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.routingPolicyKey,
             setting: networkControl.routingPolicy as! EnumSettingCore,
-            notifyComponent: {
-            self.networkControl.notifyUpdated()
-            }, markChanged: {
+            notifyComponent: { [unowned self] in
+                self.networkControl.notifyUpdated()
+            }, markChanged: { [unowned self] in
                 self.networkControl.markChanged()
-            }, sendCommand: { routingPolicy in
-            self.sendRoutingPolicyCommand(routingPolicy)
+            }, sendCommand: { [unowned self] routingPolicy in
+                self.sendRoutingPolicyCommand(routingPolicy)
         })
 
         directConnectionModeSetting = OfflineEnumSetting(
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.directConnectionModeKey,
             setting: networkControl.directConnection as! EnumSettingCore,
-            notifyComponent: {
+            notifyComponent: { [unowned self] in
                 self.networkControl.notifyUpdated()
-            }, markChanged: {
+            }, markChanged: { [unowned self] in
                 self.networkControl.markChanged()
-            }, sendCommand: { mode in
+            }, sendCommand: { [unowned self] mode in
                 self.sendDirectConnectionCommand(mode)
             })
 
@@ -229,11 +229,11 @@ class NetworkController: DeviceComponentController, NetworkControlBackend {
             deviceDict: deviceStore, presetDict: presetStore,
             entry: SettingKey.maxCellularBitrateKey,
             setting: networkControl.maxCellularBitrate as! IntSettingCore,
-            notifyComponent: {
+            notifyComponent: { [unowned self] in
                 self.networkControl.notifyUpdated()
-            }, markChanged: {
+            }, markChanged: { [unowned self] in
                 self.networkControl.markChanged()
-            }, sendCommand: { maxCellularBitrate in
+            }, sendCommand: { [unowned self] maxCellularBitrate in
                 self.sendMaxCellularBitrate(maxCellularBitrate)
             })
 
