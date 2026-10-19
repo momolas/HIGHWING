@@ -55,15 +55,25 @@ extension GGLShaderLoader {
         // Create shader program.
         programId = glCreateProgram()
 
+        let shaderBundle: Bundle = {
+            #if SWIFT_PACKAGE
+            return Bundle.module
+            #else
+            return Bundle(for: GroundSdk.self)
+            #endif
+        }()
+
         // Create and compile vertex shader.
-        guard let vertShaderURL = Bundle(for: GroundSdk.self).url(forResource: vshName, withExtension: "vsh"),
+        guard let vertShaderURL = shaderBundle.url(forResource: vshName, withExtension: "vsh")
+                ?? Bundle(for: GroundSdk.self).url(forResource: vshName, withExtension: "vsh"),
             compileShader(&vertShader, type: GLenum(GL_VERTEX_SHADER), url: vertShaderURL) else {
             ULog.e(.hmdTag, "Failed to compile vertex shader \(vshName)")
             return false
         }
 
         // Create and compile fragment shader.
-        guard let fragShaderURL = Bundle(for: GroundSdk.self).url(forResource: fshName, withExtension: "fsh"),
+        guard let fragShaderURL = shaderBundle.url(forResource: fshName, withExtension: "fsh")
+                ?? Bundle(for: GroundSdk.self).url(forResource: fshName, withExtension: "fsh"),
             compileShader(&fragShader, type: GLenum(GL_FRAGMENT_SHADER), url: fragShaderURL) else {
             ULog.e(.hmdTag, "Failed to compile fragment shader \(fshName)")
             return false
@@ -117,10 +127,11 @@ extension GGLShaderLoader {
         shader.pointee = glCreateShader(type)
 
         do {
-            var source = try NSString(contentsOfFile: url.path, encoding: String.Encoding.ascii.rawValue)
-                .cString(using: String.Encoding.ascii.rawValue)
-
-            glShaderSource(shader.pointee, 1, &source, nil)
+            let shaderString = try String(contentsOf: url, encoding: .utf8)
+            shaderString.withCString { cStr in
+                var source: UnsafePointer<GLchar>? = cStr
+                glShaderSource(shader.pointee, 1, &source, nil)
+            }
             glCompileShader(shader.pointee)
             isOK = true
         } catch {

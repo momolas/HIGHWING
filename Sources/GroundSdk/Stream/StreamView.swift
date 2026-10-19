@@ -328,12 +328,19 @@ open class StreamView: GLKView {
             return
         }
 
+        renderTimer?.invalidate()
+        renderTimer = nil
         sink = nil
 
         self.stream = stream
         if let stream = self.stream {
             sink = stream.openSink(config: GlRenderSinkCore.config(listener: self))
         }
+    }
+
+    deinit {
+        renderTimer?.invalidate()
+        renderTimer = nil
     }
 }
 
@@ -354,6 +361,8 @@ extension StreamView: GlRenderSinkListener {
     }
 
     public func onRenderingMustStop(renderer: GlRenderSink) {
+        renderTimer?.invalidate()
+        renderTimer = nil
         stopRenderer()
         self.renderer = nil
     }

@@ -192,16 +192,20 @@ class CockpitRessources {
     /// - Parameter binDef: BinDef struct
     /// - Returns: an array of the extracted data
     private func getArray<EltType>(binDef: CockpitData.BinDef) -> [EltType] {
-
         let offset = binDef.offset + binaryOffset
         let size = binDef.size
+        let stride = MemoryLayout<EltType>.stride
+        guard stride > 0, offset >= 0, size >= 0, offset + size <= self.data.count else {
+            return []
+        }
 
         let dataPos = self.data.subDataNoCopy(offset: offset, size: size)
-
-        let retArray = dataPos.withUnsafeBytes {
-            Array($0.bindMemory(to: EltType.self))
+        let count = size / stride
+        return dataPos.withUnsafeBytes { rawBuffer in
+            (0..<count).map { index in
+                rawBuffer.loadUnaligned(fromByteOffset: index * stride, as: EltType.self)
+            }
         }
-        return retArray
     }
 
     func getPositions(cockpitName: String) -> [Float32] {
@@ -237,23 +241,21 @@ class CockpitRessources {
 extension Data {
 
     func int8Data(atOffset: Int = 0) -> Int8 {
-        return self.withUnsafeBytes { $0.load(fromByteOffset: atOffset, as: Int8.self) }
+        return self.withUnsafeBytes { $0.loadUnaligned(fromByteOffset: atOffset, as: Int8.self) }
     }
 
     func int32Data(atOffset: Int = 0, bigEndian: Bool = false) -> Int32 {
         return self.withUnsafeBytes {
-            let ret = $0.load(fromByteOffset: atOffset, as: Int32.self)
+            let ret = $0.loadUnaligned(fromByteOffset: atOffset, as: Int32.self)
             return bigEndian ? ret : ret.bigEndian
         }
     }
 
     func subDataNoCopy(offset: Int, size: Int) -> Data {
-        // guard offset and size are valid ...
-        let segment: Data = self.withUnsafeBytes { buf in
-            let mbuf = UnsafeMutablePointer(mutating: buf.bindMemory(to: UInt8.self).baseAddress!)
-            return Data(bytesNoCopy: mbuf.advanced(by: offset), count: size, deallocator: .none)
-        }
-        return segment
+        let lower = startIndex + Swift.max(0, offset)
+        let upper = Swift.min(endIndex, lower + Swift.max(0, size))
+        guard lower <= upper else { return Data() }
+        return subdata(in: lower..<upper)
     }
 }
 

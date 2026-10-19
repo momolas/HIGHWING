@@ -135,8 +135,10 @@ class GGLMultiLayer {
             if externalTextureId != 0 {
                 switch type {
                 case .externalTexture(_, let autoRelease):
+                    quadDrawingLayer.updateTextureName(textId: 0)
                     if autoRelease {
                         glDeleteTextures(1, &externalTextureId)
+                        externalTextureId = 0
                     }
                 default:
                     break

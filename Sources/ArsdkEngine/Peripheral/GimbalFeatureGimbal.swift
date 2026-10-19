@@ -37,7 +37,7 @@ class GimbalFeatureGimbal: GimbalFeatureCalibratableGimbal {
     private static let settingKey = "Gimbal-main"
 
     /// Gimbal control command encoder.
-    private class GimbalControlCommandEncoder: NoAckCmdEncoder {
+    class GimbalControlCommandEncoder: NoAckCmdEncoder {
         let type = ArsdkNoAckCmdType.gimbalControl
 
         /// Max number of time the command should be sent with the same value
@@ -83,74 +83,63 @@ class GimbalFeatureGimbal: GimbalFeatureCalibratableGimbal {
         init() {
             encoderBlock = { [unowned self] in
                 // Note: this code will be called in the pomp loop
-
-                var controlMode = ArsdkFeatureGimbalControlMode.position
-                var stabilizations: [GimbalAxis: Bool] = [:]
-                var target: [GimbalAxis: Double] = [:]
-                var valueAttitudeReceivedFirstTime = false
-                var valuesAtittudeChangedByUser = false
-                var cancelled = false
-                // set the local var in a synchronized queue
-                self.queue.sync {
-                    controlMode = controlModeInternalEncoder
-                    stabilizations = stabilizationsInternalEncoder
-                    target = targetInternalEncoder
-                    valueAttitudeReceivedFirstTime = valueAttitudeReceivedFirstTimeInternalEncoder
-                    valuesAtittudeChangedByUser = encoderValuesUpdated
-                    cancelled = controlCancelled
-                }
-
-                /// if no new value has been set by user after connection to drone, we return immediately.
-                guard valueAttitudeReceivedFirstTime && valuesAtittudeChangedByUser else {
-                    return nil
-                }
-
-                if cancelled {
-                    latestControlModeInternalEncoder = .position
-                    latestStabilizationsInternalEncoder = [:]
-                    latestTargetInternalEncoder = [:]
-                    return nil
-                }
-
-                // if control, target or stabilization has changed
-                if latestControlModeInternalEncoder != controlMode ||
-                    latestStabilizationsInternalEncoder != stabilizations ||
-                    latestTargetInternalEncoder != target {
-
-                    latestControlModeInternalEncoder = controlMode
-                    latestStabilizationsInternalEncoder = stabilizations
-                    latestTargetInternalEncoder = target
-                    sentCnt = maxRepeatedSent
-                }
-
-                let allTargetsAreZero = (target.values.reduce(0.0, +) == 0)
-                // only decrement the counter if the control is in position,
-                // or, if the control is in velocity and all velocity targets are null or zero
-                if sentCnt >= 0 && (controlMode == .position || allTargetsAreZero) {
-                    sentCnt -= 1
-                }
-
-                // if sendCnt is under 0, command is not sent
-                if sentCnt >= 0 {
-                    var frameOfReferences: [GimbalAxis: ArsdkFeatureGimbalFrameOfReference] = [:]
-                    GimbalAxis.allCases.forEach {
-                        if let stabilization = stabilizations[$0], target[$0] != nil {
-                            frameOfReferences[$0] = stabilization ? .absolute : .relative
-                        } else {
-                            frameOfReferences[$0] = ArsdkFeatureGimbalFrameOfReference.none
-                        }
+                return self.queue.sync {
+                    /// if no new value has been set by user after connection to drone, we return immediately.
+                    guard self.valueAttitudeReceivedFirstTimeInternalEncoder && self.encoderValuesUpdated else {
+                        return nil
                     }
-                    return ArsdkFeatureGimbal.setTargetEncoder(
-                        gimbalId: 0,
-                        controlMode: controlMode,
-                        yawFrameOfReference: frameOfReferences[.yaw]!,
-                        yaw: Float(target[.yaw] ?? 0),
-                        pitchFrameOfReference: frameOfReferences[.pitch]!,
-                        pitch: Float(target[.pitch] ?? 0),
-                        rollFrameOfReference: frameOfReferences[.roll]!,
-                        roll: Float(target[.roll] ?? 0))
+
+                    if self.controlCancelled {
+                        self.latestControlModeInternalEncoder = .position
+                        self.latestStabilizationsInternalEncoder = [:]
+                        self.latestTargetInternalEncoder = [:]
+                        return nil
+                    }
+
+                    let controlMode = self.controlModeInternalEncoder
+                    let stabilizations = self.stabilizationsInternalEncoder
+                    let target = self.targetInternalEncoder
+
+                    // if control, target or stabilization has changed
+                    if self.latestControlModeInternalEncoder != controlMode ||
+                        self.latestStabilizationsInternalEncoder != stabilizations ||
+                        self.latestTargetInternalEncoder != target {
+
+                        self.latestControlModeInternalEncoder = controlMode
+                        self.latestStabilizationsInternalEncoder = stabilizations
+                        self.latestTargetInternalEncoder = target
+                        self.sentCnt = self.maxRepeatedSent
+                    }
+
+                    let allTargetsAreZero = (target.values.reduce(0.0, +) == 0)
+                    // only decrement the counter if the control is in position,
+                    // or, if the control is in velocity and all velocity targets are null or zero
+                    if self.sentCnt >= 0 && (controlMode == .position || allTargetsAreZero) {
+                        self.sentCnt -= 1
+                    }
+
+                    // if sendCnt is under 0, command is not sent
+                    if self.sentCnt >= 0 {
+                        var frameOfReferences: [GimbalAxis: ArsdkFeatureGimbalFrameOfReference] = [:]
+                        GimbalAxis.allCases.forEach {
+                            if let stabilization = stabilizations[$0], target[$0] != nil {
+                                frameOfReferences[$0] = stabilization ? .absolute : .relative
+                            } else {
+                                frameOfReferences[$0] = ArsdkFeatureGimbalFrameOfReference.none
+                            }
+                        }
+                        return ArsdkFeatureGimbal.setTargetEncoder(
+                            gimbalId: 0,
+                            controlMode: controlMode,
+                            yawFrameOfReference: frameOfReferences[.yaw]!,
+                            yaw: Float(target[.yaw] ?? 0),
+                            pitchFrameOfReference: frameOfReferences[.pitch]!,
+                            pitch: Float(target[.pitch] ?? 0),
+                            rollFrameOfReference: frameOfReferences[.roll]!,
+                            roll: Float(target[.roll] ?? 0))
+                    }
+                    return nil
                 }
-                return nil
             }
         }
 

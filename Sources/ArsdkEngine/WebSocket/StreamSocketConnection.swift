@@ -110,8 +110,15 @@ class StreamSocketConnection: NSObject {
     /// Write all pending buffers or until output is full
     private func writeNextBuffers() {
         while let data = writeQueue.first, outputStream.hasSpaceAvailable {
-            let written = data.withUnsafeBytes {
-                return outputStream.write($0.bindMemory(to: UInt8.self).baseAddress!, maxLength: data.count)
+            guard !data.isEmpty else {
+                writeQueue.removeFirst()
+                continue
+            }
+            let written = data.withUnsafeBytes { rawBuffer -> Int in
+                guard let baseAddress = rawBuffer.bindMemory(to: UInt8.self).baseAddress else {
+                    return 0
+                }
+                return outputStream.write(baseAddress, maxLength: data.count)
             }
             if written < 0 {
                 return

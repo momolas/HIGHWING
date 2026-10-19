@@ -199,23 +199,29 @@ public class GlRenderSinkCore: SinkCore, GlRenderSink {
         self.backend = backend
     }
 
+    /// Closes the sink and releases backend references.
+    public override func close() {
+        super.close()
+        renderSinkBackend = nil
+    }
+
     /// Start renderer.
     ///
     /// - Returns: 'true' on success, 'false' otherwise
     public func start() -> Bool {
-        return renderSinkBackend.start()
+        return renderSinkBackend?.start() ?? false
     }
 
     /// Stop renderer.
     ///
     /// - Returns: 'true' on success, 'false' otherwise
     public func stop() -> Bool {
-        return renderSinkBackend.stop()
+        return renderSinkBackend?.stop() ?? false
     }
 
     /// Render a frame.
     public func renderFrame() {
-        renderSinkBackend.renderFrame()
+        renderSinkBackend?.renderFrame()
     }
 
     /// Creates a new GLRendererSink config.

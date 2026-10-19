@@ -220,6 +220,8 @@ typedef void(^ArsdkStreamCmdCb)(int status);
  @param mediaCount: available media count
  @param selectedMedia: bitfield of the identifiers of the currently selected medias
  */
+struct pdraw_demuxer_media;
+
 - (void)handleMediaListChange:(nonnull const struct pdraw_demuxer_media *)mediaList
                         count:(size_t)mediaCount
                 selectedMedia:(uint32_t)selectedMedias;

@@ -513,22 +513,22 @@ extension Data {
         switch size {
         case 2:
             let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.load(as: Int16.self)
+                $0.loadUnaligned(as: Int16.self)
             }
             return Int(ret)
         case 4:
             let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.load(as: Int32.self)
+                $0.loadUnaligned(as: Int32.self)
             }
             return Int(ret)
         case 8:
             let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.load(as: Int64.self)
+                $0.loadUnaligned(as: Int64.self)
             }
             return Int(ret)
         default: // 1
             let ret = self.subdata(in: index ..< (index + size)).withUnsafeBytes {
-                $0.load(as: Int8.self)
+                $0.loadUnaligned(as: Int8.self)
             }
             return Int(ret)
         }
@@ -543,7 +543,7 @@ extension Data {
         let retFloat: Float32
 
         let ret = self.subdata(in: index ..< (index + 4)).withUnsafeBytes {
-            $0.load(as: Float32.self)
+            $0.loadUnaligned(as: Float32.self)
         }
         retFloat = ret
 
@@ -557,7 +557,7 @@ extension Data {
         let retFloat: Float64
 
         let ret = self.subdata(in: index ..< (index + 8)).withUnsafeBytes {
-            $0.load(as: Float64.self)
+            $0.loadUnaligned(as: Float64.self)
         }
         retFloat = ret
 

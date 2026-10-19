@@ -33,9 +33,7 @@ import Foundation
 class MediaReplayRefCore: Ref<MediaReplay> {
 
     /// Media replay stream instance
-    private var stream: MediaReplayCore? {
-        value as? MediaReplayCore
-    }
+    private var stream: MediaReplayCore?
 
     /// Media replay stream listener
     private var streamListener: MediaReplayCore.Listener!
@@ -51,6 +49,7 @@ class MediaReplayRefCore: Ref<MediaReplay> {
     ///   - releaseStream: action to execute to release the stream when the reference is released; no-op by default
     init(observer: @escaping Observer, stream: MediaReplayCore, releaseStream: @escaping () -> Void = {}) {
         self.releaseStream = releaseStream
+        self.stream = stream
         super.init(observer: observer)
         // register ourself on change notifications
         streamListener = stream.register(
@@ -60,6 +59,7 @@ class MediaReplayRefCore: Ref<MediaReplay> {
             },
             unpublish: { [unowned self] in
                 // unpublish stream
+                self.stream?.unregister(listener: self.streamListener)
                 self.update(newValue: nil)
         })
         setup(value: stream)

@@ -99,8 +99,18 @@ struct PilotingCommand {
     class Encoder {
         let type = ArsdkNoAckCmdType.piloting
 
+        /// Lock protecting concurrent access between the main thread and the pomp loop thread.
+        fileprivate let lock = NSLock()
+
+        /// Backing storage for current piloting command.
+        private var _pilotingCommand = PilotingCommand()
+
         /// Current piloting command that is read and encoded by the pcmd loop.
-        private(set) var pilotingCommand = PilotingCommand()
+        var pilotingCommand: PilotingCommand {
+            lock.lock()
+            defer { lock.unlock() }
+            return _pilotingCommand
+        }
 
         /// Private constructor
         fileprivate init() {}
@@ -110,8 +120,10 @@ struct PilotingCommand {
         /// - Parameter roll: roll value to set
         /// - Returns: true if setting this value changed the piloting command, false otherwise
         func set(roll: Int) -> Bool {
-            if pilotingCommand.roll != roll {
-                pilotingCommand.roll = roll
+            lock.lock()
+            defer { lock.unlock() }
+            if _pilotingCommand.roll != roll {
+                _pilotingCommand.roll = roll
                 return true
             }
             return false
@@ -122,8 +134,10 @@ struct PilotingCommand {
         /// - Parameter pitch: pitch value to set
         /// - Returns: true if setting this value changed the piloting command, false otherwise
         func set(pitch: Int) -> Bool {
-            if pilotingCommand.pitch != pitch {
-                pilotingCommand.pitch = pitch
+            lock.lock()
+            defer { lock.unlock() }
+            if _pilotingCommand.pitch != pitch {
+                _pilotingCommand.pitch = pitch
                 return true
             }
             return false
@@ -134,8 +148,10 @@ struct PilotingCommand {
         /// - Parameter yaw: yaw value to set
         /// - Returns: true if setting this value changed the piloting command, false otherwise
         func set(yaw: Int) -> Bool {
-            if pilotingCommand.yaw != yaw {
-                pilotingCommand.yaw = yaw
+            lock.lock()
+            defer { lock.unlock() }
+            if _pilotingCommand.yaw != yaw {
+                _pilotingCommand.yaw = yaw
                 return true
             }
             return false
@@ -146,8 +162,10 @@ struct PilotingCommand {
         /// - Parameter gaz: gaz value to set
         /// - Returns: true if setting this value changed the piloting command, false otherwise
         func set(gaz: Int) -> Bool {
-            if pilotingCommand.gaz != gaz {
-                pilotingCommand.gaz = gaz
+            lock.lock()
+            defer { lock.unlock() }
+            if _pilotingCommand.gaz != gaz {
+                _pilotingCommand.gaz = gaz
                 return true
             }
             return false
@@ -155,7 +173,9 @@ struct PilotingCommand {
 
         /// Reset all the values of the piloting command to their default (0).
         func reset() {
-            pilotingCommand = PilotingCommand()
+            lock.lock()
+            defer { lock.unlock() }
+            _pilotingCommand = PilotingCommand()
         }
 
         /// Base for ARDrone3 family piloting command encoders.
@@ -172,17 +192,22 @@ struct PilotingCommand {
 
             override func reset() {
                 super.reset()
+                lock.lock()
                 seqNr = 0
+                lock.unlock()
             }
 
             /// Generates subsequent piloting command sequence number and timestamp.
             ///
             /// - Returns: sequence number to use to encode next command
             func nextSequenceNumber() -> UInt {
+                lock.lock()
                 seqNr = seqNr &+ 1
+                let currentSeq = seqNr
+                lock.unlock()
                 let timestamp = UInt32(((TimeProvider.timeInterval) * 1000)
                     .truncatingRemainder(dividingBy: Double(UInt32.max)))
-                let seqVal = UInt32(seqNr) << 24
+                let seqVal = UInt32(currentSeq) << 24
                 let timestampVal = timestamp & ((1 << 24) - 1)
                 return UInt(timestampVal | seqVal)
             }
@@ -202,13 +227,14 @@ struct PilotingCommand {
             override init() {
                 super.init()
                 encoderBlock = { [unowned self] in
-                    let flag = self.pilotingCommand.flag
+                    let cmd = self.pilotingCommand
+                    let flag = cmd.flag
                     // negate pitch: positive pitch from the drone POV means tilted towards ground (i.e. forward move),
                     // negative pitch means tilted towards sky (i.e. backward move)
-                    let pitch = -self.pilotingCommand.pitch
-                    let roll = self.pilotingCommand.roll
-                    let yaw = self.pilotingCommand.yaw
-                    let gaz = self.pilotingCommand.gaz
+                    let pitch = -cmd.pitch
+                    let roll = cmd.roll
+                    let yaw = cmd.yaw
+                    let gaz = cmd.gaz
                     return ArsdkFeatureArdrone3Piloting.pCMDEncoder(
                         flag: flag, roll: roll, pitch: pitch, yaw: yaw, gaz: gaz,
                         timestampandseqnum: self.nextSequenceNumber())
@@ -230,11 +256,12 @@ struct PilotingCommand {
             override init() {
                 super.init()
                 encoderBlock = { [unowned self] in
+                    let cmd = self.pilotingCommand
                     let flag: UInt = 1 // Do not use the piloting command flag
-                    let pitch = self.pilotingCommand.pitch
-                    let roll = self.pilotingCommand.roll
+                    let pitch = cmd.pitch
+                    let roll = cmd.roll
                     let yaw = 0
-                    let gaz = self.pilotingCommand.gaz
+                    let gaz = cmd.gaz
                     return ArsdkFeatureArdrone3Piloting.pCMDEncoder(
                         flag: flag, roll: roll, pitch: pitch, yaw: yaw, gaz: gaz,
                         timestampandseqnum: self.nextSequenceNumber())

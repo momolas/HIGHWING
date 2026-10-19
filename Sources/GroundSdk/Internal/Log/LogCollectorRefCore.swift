@@ -107,16 +107,23 @@ class LogCollectorRefCore: Ref<LogCollector> {
                 }
                 updateValue()
 
-                ioQueue.async {
+                ioQueue.async { [weak self] in
+                    let copySucceeded: Bool
                     do {
                         try FileManager.default.copyItem(at: srcUrl, to: dstUrl)
-                        self.states[source]?.status = .collected
-                        self.states[source]?.collectedSize = fileSize
+                        copySucceeded = true
                     } catch let err {
                         ULog.e(.logCollectorTag, "Failed to copy file at \(srcUrl) to \(dstUrl): \(err)")
-                        self.states[source]?.status = .failed
+                        copySucceeded = false
                     }
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        if copySucceeded {
+                            self.states[source]?.status = .collected
+                            self.states[source]?.collectedSize = fileSize
+                        } else {
+                            self.states[source]?.status = .failed
+                        }
                         self.updateValue()
                     }
                 }

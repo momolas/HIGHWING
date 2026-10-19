@@ -226,7 +226,7 @@ private class FolderMonitor {
     private var dispatchSource: DispatchSourceFileSystemObject?
 
     /// Dispatch queue used for sending file changes in the directory
-    private let dispatchQueue = DispatchQueue(label: "com.parrot.gsdk.folderMonitor", attributes: .concurrent)
+    private let dispatchQueue = DispatchQueue(label: "com.parrot.gsdk.folderMonitor")
 
     /// List of file paths in the monitored folder
     private var folderContent: [URL]?
@@ -247,7 +247,11 @@ private class FolderMonitor {
             return
         }
 
-        fileDescriptor = open(url.path, O_EVTONLY)
+        let fd = open(url.path, O_EVTONLY)
+        guard fd >= 0 else {
+            return
+        }
+        fileDescriptor = fd
         dispatchSource = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fileDescriptor,
                                                                    eventMask: .write, queue: dispatchQueue)
         dispatchSource?.setEventHandler { [weak self] in
@@ -255,7 +259,9 @@ private class FolderMonitor {
                 let files = try? FileManager.default.contentsOfDirectory(
                     at: self.url, includingPropertiesForKeys: nil, options: .skipsHiddenFiles) {
                 if let newFile = files.first(where: { !(self.folderContent?.contains($0) ?? false) }) {
-                    self.onNewFile(newFile)
+                    DispatchQueue.main.async { [weak self] in
+                        self?.onNewFile(newFile)
+                    }
                 }
                 self.folderContent = files
             }
@@ -264,8 +270,10 @@ private class FolderMonitor {
         dispatchSource?.setCancelHandler { [weak self] in
             guard let self = self else { return }
 
-            close(self.fileDescriptor)
-            self.fileDescriptor = -1
+            if self.fileDescriptor >= 0 {
+                close(self.fileDescriptor)
+                self.fileDescriptor = -1
+            }
             self.dispatchSource = nil
         }
 

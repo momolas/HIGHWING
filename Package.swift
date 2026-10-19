@@ -7,6 +7,7 @@ let package = Package(
         .iOS(.v15)
     ],
     products: [
+        .library(name: "DroneKit", targets: ["GroundSdk", "ArsdkEngine"]),
         .library(name: "GroundSdk", targets: ["GroundSdk"]),
         .library(name: "ArsdkEngine", targets: ["ArsdkEngine"]),
         .library(name: "SdkCore", targets: ["SdkCore"]),
@@ -30,7 +31,11 @@ let package = Package(
                 "SdkCore",
                 .product(name: "SwiftProtobuf", package: "swift-protobuf")
             ],
-            path: "Sources/GroundSdk"
+            path: "Sources/GroundSdk",
+            exclude: ["GroundSdk.h"],
+            resources: [
+                .process("Hmd/internal/Shaders")
+            ]
         ),
         .target(
             name: "ArsdkEngine",
@@ -39,7 +44,18 @@ let package = Package(
                 "SdkCore",
                 .product(name: "SwiftProtobuf", package: "swift-protobuf")
             ],
-            path: "Sources/ArsdkEngine"
+            path: "Sources/ArsdkEngine",
+            exclude: ["ArsdkEngine.h"]
+        ),
+        .testTarget(
+            name: "DroneKitTests",
+            dependencies: [
+                "GroundSdk",
+                "ArsdkEngine",
+                "SdkCore",
+                "OpenFlightCore"
+            ],
+            path: "Tests/DroneKitTests"
         )
     ]
 )

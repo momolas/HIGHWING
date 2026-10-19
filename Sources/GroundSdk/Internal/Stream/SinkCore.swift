@@ -47,11 +47,12 @@ public class SinkCore: NSObject {
 
     /// Closes the sink.
     public func close() {
-        backend.close()
+        backend?.close()
+        backend = nil
     }
 
     /// Destructor
     deinit {
-        backend.close()
+        backend?.close()
     }
 }

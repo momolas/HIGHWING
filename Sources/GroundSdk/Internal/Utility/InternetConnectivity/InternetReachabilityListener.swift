@@ -161,6 +161,14 @@ class InternetReachabilityListenerImpl: InternetReachabilityListener {
         }
     }
 
+    deinit {
+        if running {
+            SCNetworkReachabilitySetCallback(reachabilityRef, nil, nil)
+            SCNetworkReachabilitySetDispatchQueue(reachabilityRef, nil)
+            running = false
+        }
+    }
+
     /// Updates internet reachability and notify listeners
     fileprivate func reachabilityChanged() {
         let newReachability = internetAvailable

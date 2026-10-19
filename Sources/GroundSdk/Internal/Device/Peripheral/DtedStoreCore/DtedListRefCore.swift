@@ -41,7 +41,7 @@ class DtedListRefCore: Ref<[DtedFile]>, DtedOperationRef {
     /// Convenience accessor to the `value` of the `Ref` returning the `value` typed to a
     /// implementation dependent type.
     private var files: [DtedFileCore] {
-        self.value as! [DtedFileCore]
+        (self.value as? [DtedFileCore]) ?? []
     }
 
     /// Constructor
@@ -83,7 +83,10 @@ private extension DtedListRefCore {
             update(newValue: nil)
             return
         }
-        let newList = process(event, files: self.files)
+        guard request == nil, let currentFiles = self.value as? [DtedFileCore] else {
+            return
+        }
+        let newList = process(event, files: currentFiles)
         update(newValue: newList)
     }
 

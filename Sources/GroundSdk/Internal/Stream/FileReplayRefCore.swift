@@ -33,9 +33,7 @@ import Foundation
 class FileReplayRefCore: Ref<FileReplay> {
 
     /// File replay stream instance
-    private var stream: FileReplayCore? {
-        value as? FileReplayCore
-    }
+    private var stream: FileReplayCore?
 
     /// File replay stream listener
     private var streamListener: FileReplayCore.Listener!
@@ -51,6 +49,7 @@ class FileReplayRefCore: Ref<FileReplay> {
     ///   - observer: observer notified of state change
     init(provider: FileReplayProvider, stream: FileReplayCore, observer: @escaping Observer) {
         self.provider = provider
+        self.stream = stream
         super.init(observer: observer)
         // register ourself on change notifications
         streamListener = stream.register(
@@ -60,6 +59,7 @@ class FileReplayRefCore: Ref<FileReplay> {
             },
             unpublish: { [unowned self] in
                 // unpublish stream
+                self.stream?.unregister(listener: self.streamListener)
                 self.update(newValue: nil)
         })
         setup(value: stream)

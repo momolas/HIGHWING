@@ -37,8 +37,11 @@ private extension UIDevice {
         }
         var sysinfo = utsname()
         uname(&sysinfo)
-        return String(bytes: Data(bytes: &sysinfo.machine, count: Int(_SYS_NAMELEN)),
-                      encoding: .ascii)!.trimmingCharacters(in: .controlCharacters)
+        return withUnsafePointer(to: &sysinfo.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: Int(_SYS_NAMELEN)) {
+                String(cString: $0).trimmingCharacters(in: .controlCharacters)
+            }
+        }
     }()
 }
 

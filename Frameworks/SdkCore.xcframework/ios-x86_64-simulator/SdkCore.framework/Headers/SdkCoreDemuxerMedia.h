@@ -31,6 +31,7 @@
 #import "ArsdkCore.h"
 #import "ArsdkCore+Source.h"
 
+struct pdraw_demuxer_media;
 
 @interface SdkCoreDemuxerMedia : NSObject
 

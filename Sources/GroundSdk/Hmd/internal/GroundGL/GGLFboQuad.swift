@@ -60,8 +60,8 @@ class GGLFboQuad: GGLFbo, GGLDrawable {
     func drawableWillSetupGl(_ context: EAGLContext) {
         effect = GLKBaseEffect()
 
-        let cgiImage = UIImage(named: "ghost")!.cgImage
-        if let textureInfo = try? GLKTextureLoader.texture(with: cgiImage!) {
+        if let cgImage = UIImage(named: "ghost")?.cgImage,
+           let textureInfo = try? GLKTextureLoader.texture(with: cgImage) {
             effect.texture2d0.name = textureInfo.name
             effect.texture2d0.enabled = GLboolean(UInt8(GL_TRUE))
         }

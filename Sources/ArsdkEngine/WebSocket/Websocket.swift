@@ -192,7 +192,7 @@ class WebSocketClientSession: WebSocketSession {
 
     /// A Web socket frame
     /// According to rfc6455
-    private struct Frame {
+    struct Frame {
         /// Frane opCode
         enum OpCode: UInt8 {
             case continuation = 0x00
@@ -254,44 +254,45 @@ class WebSocketClientSession: WebSocketSession {
             var len: Int?
             var mask: UInt16?
             var headerLen: Int = 2
+            let base = data.startIndex
             if data.count > 2 {
-                fin = data[0] & 0x80 != 0
-                opCode = OpCode(rawValue: data[0] & 0x0F)
-                let maskBit = data[1] & 0x80 != 0
-                let lenBase = data[1] & 0x7F
+                fin = data[base] & 0x80 != 0
+                opCode = OpCode(rawValue: data[base] & 0x0F)
+                let maskBit = data[base + 1] & 0x80 != 0
+                let lenBase = data[base + 1] & 0x7F
                 switch lenBase {
                 case 0...125:
                     len = Int(lenBase)
                 case 126:
                     if data.count >= 4 {
-                        len = data.subdata(in: 2..<4).withUnsafeBytes {
-                            Int($0.load(as: UInt16.self).bigEndian)
+                        len = data.subdata(in: (base + 2)..<(base + 4)).withUnsafeBytes {
+                            Int($0.loadUnaligned(as: UInt16.self).bigEndian)
                         }
                         headerLen += 2
                     }
                 case 127:
                     if data.count >= 10 {
-                        len = data.subdata(in: 2..<10).withUnsafeBytes {
-                            Int(bigEndian: $0.load(as: Int.self))
+                        len = data.subdata(in: (base + 2)..<(base + 10)).withUnsafeBytes {
+                            Int(bigEndian: $0.loadUnaligned(as: Int.self))
                         }
                         headerLen += 8
                     }
                 default: break
                 }
 
-                if maskBit {
-                    mask = data.subdata(in: headerLen..<headerLen+2).withUnsafeBytes {
-                        $0.load(as: UInt16.self)
+                if maskBit, data.count >= headerLen + 2 {
+                    mask = data.subdata(in: (base + headerLen)..<(base + headerLen + 2)).withUnsafeBytes {
+                        $0.loadUnaligned(as: UInt16.self)
                     }
                     headerLen += 2
                 }
             }
-            if let fin = fin, let opCode = opCode, let len = len, data.count >= len + headerLen {
+            if let fin = fin, let opCode = opCode, let len = len, len >= 0, data.count >= len + headerLen {
                 self.fin = fin
                 self.opCode = opCode
                 self.len = len + headerLen
                 self.mask = mask
-                self.payload = data.subdata(in: headerLen..<len+headerLen)
+                self.payload = data.subdata(in: (base + headerLen)..<(base + len + headerLen))
             } else {
                 return nil
             }

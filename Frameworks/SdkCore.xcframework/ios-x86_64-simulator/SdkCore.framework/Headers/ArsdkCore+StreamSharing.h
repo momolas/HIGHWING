@@ -176,7 +176,7 @@ typedef NS_ENUM(NSInteger, ArsdkStreamOverlayResolution) {
 @property struct sdkcore_stream_sharing *_Nullable sdkCoreStreamSharing;
 
 /** Dispatch queue running the pomp loop */
-@property(nonatomic) PompLoopUtil *_Nonnull pompLoopUtil;
+@property(nonatomic, strong) PompLoopUtil *_Nonnull pompLoopUtil;
 
 - (nonnull instancetype)initWithPompLoopUtil:(nonnull PompLoopUtil *)pompLoopUtil
                        streamSharingDelegate:(nonnull id<ArsdkStreamSharingDelegate>)streamSharingDelegate;
